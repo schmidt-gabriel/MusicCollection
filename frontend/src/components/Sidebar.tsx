@@ -250,7 +250,7 @@ const Home: React.FunctionComponent = () => {
     // never shows the full address (the email itself lives in the dropdown).
     const displayName =
         (user?.name && user.name !== user.email && user.name)
-        || user?.nickname
+        || user?.name
         || user?.given_name
         || (user?.email ? user.email.split('@')[0] : undefined)
         || 'Convidado';
