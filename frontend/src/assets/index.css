@@ -56,9 +56,37 @@ code {
   --shadow: 0 6px 24px rgba(49, 46, 129, 0.08);
 }
 
+/* Dark theme: overrides the tokens above; toggled from the sidebar. */
+:root[data-theme='dark'] {
+  --bg: #171a21;
+  --surface: #21262f;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
 body {
   background: var(--bg);
   color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:root[data-theme='dark'] .panel {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='dark'] .page-header small,
+:root[data-theme='dark'] .text-muted {
+  color: var(--muted) !important;
+}
+
+:root[data-theme='dark'] .pill-search {
+  background: var(--surface);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+:root[data-theme='dark'] .pill-search::placeholder {
+  color: var(--muted);
 }
 
 .page-header {

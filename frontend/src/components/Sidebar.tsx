@@ -1,75 +1,188 @@
 import { NavLink } from 'react-router-dom'
 import styled from 'styled-components'
-import { Image, Spinner } from 'react-bootstrap'
-import { FaFileCsv, FaFileCode, FaAccusoft, FaTasks, FaTree } from 'react-icons/fa'
+import { Image, Spinner, Dropdown } from 'react-bootstrap'
+import { FaFileCsv, FaFileCode, FaAccusoft, FaTasks, FaTree, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
 import { ExportCollection } from '../services/Albums';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
+import { useTheme } from '../hooks/useTheme';
 
-const SidebarBottom = styled.div`
-    position: absolute;
-    bottom: 0;
-    display: flex;
-    align-items: start;
-    justify-content: start;
-    padding-bottom: 1rem;   
-`
-
-const SidebarMenu = styled.div` 
+const SidebarMenu = styled.nav`
     width: 100%;
     height: 100vh;
-    background: linear-gradient(180deg, #3a4150 0%, #23272f 100%);
-    transition: .6s;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #3a4150 0%, #1f232b 100%);
+    color: #fff;
+    padding: 1.25rem 0.75rem;
 `
 
-const MenuItems = styled.li`
-    list-style: none;
+const Brand = styled.div`
     display: flex;
     align-items: center;
-    justify-content: start;
+    gap: 0.6rem;
+    padding: 0 0.5rem 0.25rem;
+`
+
+const BrandText = styled.span`
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+`
+
+const Divider = styled.hr`
+    border: none;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0.9rem 0.5rem;
+`
+
+const SectionLabel = styled.div`
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 0 0.75rem 0.4rem;
+`
+
+const NavList = styled.ul`
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+`
+
+const IconSlot = styled.span`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    font-size: 16px;
+    flex-shrink: 0;
+`
+
+const itemStyles = `
+    display: flex;
+    align-items: center;
+    gap: 14px;
     width: 100%;
-    height: 52px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+    }
 `
 
 const MenuItemLinks = styled(NavLink)`
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin: 0 0.75rem;
-    padding: 0.6rem 1rem;
-    font-size: 17px;
-    border-radius: 10px;
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.92);
-    transition: background-color .15s ease;
-
-    &:hover {
-        background-color: rgba(255, 255, 255, 0.16);
-        color: #ffffff;
-    }
+    ${itemStyles}
+    position: relative;
 
     &.active {
-        background-color: #ffffff;
-        color: var(--brand-dark);
+        background-color: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
         font-weight: 600;
+    }
+
+    &.active::before {
+        content: '';
+        position: absolute;
+        left: -0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 22px;
+        border-radius: 0 3px 3px 0;
+        background: var(--brand-2, #8b5cf6);
     }
 `
 
 const MenuItemButton = styled.div`
+    ${itemStyles}
+`
+
+const Footer = styled.div`
+    margin-top: auto;
     display: flex;
     align-items: center;
-    width: 100%;
-    margin: 0 0.75rem;
-    padding: 0.6rem 1rem;
-    font-size: 17px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.92);
+    gap: 0.6rem;
+    padding: 0.75rem 0.5rem 0.25rem;
+`
+
+const Avatar = styled(Image)`
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+`
+
+const UserMeta = styled.div`
+    min-width: 0;
+    flex: 1;
+`
+
+const UserName = styled.div`
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`
+
+const UserEmail = styled.div`
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`
+
+const UserButton = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.35rem;
+    margin: -0.35rem;
+    border-radius: 12px;
     cursor: pointer;
     transition: background-color .15s ease;
 
     &:hover {
-        background-color: rgba(255, 255, 255, 0.16);
-        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+`
+
+const ThemeToggleButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 8px;
+    transition: color .15s ease, background-color .15s ease;
+
+    &:hover {
+        color: rgba(255, 255, 255, 0.95);
+        background-color: rgba(255, 255, 255, 0.08);
     }
 `
 
@@ -91,113 +204,160 @@ const SidebarData = [
     }
 ]
 
-const LogoutButton = () => {
-    const { logout } = useAuth0();
+const ThemeToggle = () => {
+    const { isDark, toggleTheme } = useTheme();
 
     return (
-        <MenuItemButton onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
-            Log Out
-        </MenuItemButton>
+        <ThemeToggleButton
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={isDark}
+            aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+            title={isDark ? 'Modo claro' : 'Modo escuro'}
+        >
+            {isDark ? <FaSun /> : <FaMoon />}
+        </ThemeToggleButton>
     );
 };
+
+type UserToggleProps = {
+    picture?: string;
+    name?: string;
+    email?: string;
+    onClick?: (e: React.MouseEvent) => void;
+};
+
+// Custom Dropdown toggle: the whole user chip opens the menu on click.
+const UserToggle = forwardRef<HTMLDivElement, UserToggleProps>(
+    ({ picture, name, email, onClick }, ref) => (
+        <UserButton
+            ref={ref}
+            onClick={onClick}
+            role="button"
+            aria-label="Abrir menu do usuário"
+            title="Menu do usuário"
+        >
+            <Avatar src={picture} roundedCircle />
+            <UserMeta>
+                <UserName>{name ?? 'Convidado'}</UserName>
+                {email && <UserEmail>{email}</UserEmail>}
+            </UserMeta>
+        </UserButton>
+    )
+);
 
 const Home: React.FunctionComponent = () => {
     const [exportLoadingCSV, setExportLoadingCSV] = useState(false);
     const [exportLoadingJSON, setExportLoadingJSON] = useState(false);
-    const { user } = useAuth0();
+    const { user, logout } = useAuth0();
+
+    const exportCSV = () => {
+        if (exportLoadingCSV) return;
+        setExportLoadingCSV(true);
+        ExportCollection().then(data => {
+            const headers = 'RELEASE_YEAR;ARTIST;TITLE;MEDIA;PURCHASE;ORIGIN;EDITION_YEAR;IFPI_MASTERING;IFPI_MOULD;BARCODE;LOTE;OBS;DISCOGS_ID;SPOTIFY_ID\n'
+            const csv = data.map((item) => {
+                return [
+                    item.releaseYear,
+                    item.artist,
+                    item.title,
+                    item.media,
+                    item.purchase,
+                    item.origin,
+                    item.editionYear,
+                    item.ifpiMastering,
+                    item.ifpiMould,
+                    item.barcode,
+                    item.lote,
+                    item.obs,
+                    item.discogs.id,
+                    item.spotify.id,
+                ].join(';').replace(/(\r\n|\n|\r)/gm, "")
+            }).join('\n')
+            const universalBOM = "﻿";
+            const csvData = universalBOM + headers + csv;
+            const blob = new Blob([csvData], { type: 'text/csv' })
+            const hiddenElement = document.createElement('a')
+            hiddenElement.href = window.URL.createObjectURL(blob)
+            hiddenElement.target = '_blank'
+            hiddenElement.download = 'collection.csv'
+            hiddenElement.click()
+            setExportLoadingCSV(false);
+        })
+    };
+
+    const exportJSON = () => {
+        if (exportLoadingJSON) return;
+        setExportLoadingJSON(true);
+        ExportCollection().then(data => {
+            const hiddenElement = document.createElement('a')
+            hiddenElement.href = 'data:text/json;charset=utf-8,' + encodeURI(JSON.stringify(data))
+            hiddenElement.target = '_blank'
+            hiddenElement.download = 'collection.json'
+            hiddenElement.click()
+            setExportLoadingJSON(false);
+        })
+    };
+
     return (
         <SidebarMenu>
-            <h2 style={{ marginLeft: '16px', color: 'white', paddingTop: '1rem' }}>Music Collection</h2>
-            <hr style={{ width: '90%', marginLeft: '16px', color: "white" }}></hr>
-            {SidebarData.map((item) => {
-                return (
-                    <MenuItems key={item.title}>
+            <Brand>
+                <BrandText>Music<br />Collection</BrandText>
+            </Brand>
+
+            <Divider />
+
+            <SectionLabel>Menu</SectionLabel>
+            <NavList>
+                {SidebarData.map((item) => (
+                    <li key={item.title}>
                         <MenuItemLinks to={item.path}>
-                            {item.icon}
-                            <span style={{ marginLeft: '16px' }}>{item.title}</span>
+                            <IconSlot>{item.icon}</IconSlot>
+                            <span>{item.title}</span>
                         </MenuItemLinks>
-                    </MenuItems>
-                )
-            })}
-            <hr style={{ width: '90%', marginLeft: '16px', color: "white" }}></hr>
-            <MenuItems>
-                <MenuItemButton
-                    onClick={
-                        () => {
-                            if (exportLoadingCSV) {
-                                return;
-                            }
-                            setExportLoadingCSV(true);
-                            ExportCollection().then(data => {
-                                const headers = 'RELEASE_YEAR;ARTIST;TITLE;MEDIA;PURCHASE;ORIGIN;EDITION_YEAR;IFPI_MASTERING;IFPI_MOULD;BARCODE;LOTE;OBS;DISCOGS_ID;SPOTIFY_ID\n'
-                                const csv = data.map((item) => {
-                                    return [
-                                        item.releaseYear,
-                                        item.artist,
-                                        item.title,
-                                        item.media,
-                                        item.purchase,
-                                        item.origin,
-                                        item.editionYear,
-                                        item.ifpiMastering,
-                                        item.ifpiMould,
-                                        item.barcode,
-                                        item.lote,
-                                        item.obs,
-                                        item.discogs.id,
-                                        item.spotify.id,
-                                    ].join(';').replace(/(\r\n|\n|\r)/gm, "")
-                                }).join('\n')
-                                const universalBOM = "\uFEFF";
-                                const csvData = universalBOM + headers + csv;
-                                const blob = new Blob([csvData], { type: 'text/csv' })
-                                const hiddenElement = document.createElement('a')
-                                hiddenElement.href = window.URL.createObjectURL(blob)
-                                hiddenElement.target = '_blank'
-                                hiddenElement.download = 'collection.csv'
-                                hiddenElement.click()
-                                setExportLoadingCSV(false);
-                            }
-                            )
+                    </li>
+                ))}
+            </NavList>
 
-                        }
+            <Divider />
 
-                    }>
-                    <FaFileCsv></FaFileCsv><span style={{ marginLeft: '16px' }}>Exportar CSV</span>
-                    {exportLoadingCSV && <Spinner style={{ marginLeft: '16px' }}></Spinner>}
-                </MenuItemButton>
-            </MenuItems>
-            <MenuItems>
-                <MenuItemButton
-                    onClick={
-                        () => {
-                            if (exportLoadingJSON) {
-                                return;
-                            }
-                            setExportLoadingJSON(true);
-                            console.log('exporting JSON')
-                            ExportCollection().then(data => {
-                                const hiddenElement = document.createElement('a')
-                                hiddenElement.href = 'data:text/json;charset=utf-8,' + encodeURI(JSON.stringify(data))
-                                hiddenElement.target = '_blank'
-                                hiddenElement.download = 'collection.json'
-                                hiddenElement.click()
-                                setExportLoadingJSON(false);
-                            })
-                        }
-                    }>
-                    <FaFileCode></FaFileCode><span style={{ marginLeft: '16px' }}>Exportar JSON</span>
-                    {exportLoadingJSON && <Spinner style={{ marginLeft: '16px' }}></Spinner>}
-                </MenuItemButton>
-            </MenuItems>
-            <hr style={{ width: '90%', marginLeft: '16px', color: "white" }}></hr>
-            <MenuItems>
-                <LogoutButton></LogoutButton>
-            </MenuItems>
-            <hr style={{ width: '90%', marginLeft: '16px', color: "white" }}></hr>
-            <SidebarBottom>
-                <Image src={user?.picture} roundedCircle style={{ width: '50px', height: '50px', marginLeft: '16px' }} />
-            </SidebarBottom>
+            <SectionLabel>Exportar</SectionLabel>
+            <NavList>
+                <li>
+                    <MenuItemButton onClick={exportCSV}>
+                        <IconSlot><FaFileCsv /></IconSlot>
+                        <span>Exportar CSV</span>
+                        {exportLoadingCSV && <Spinner size="sm" style={{ marginLeft: 'auto' }} />}
+                    </MenuItemButton>
+                </li>
+                <li>
+                    <MenuItemButton onClick={exportJSON}>
+                        <IconSlot><FaFileCode /></IconSlot>
+                        <span>Exportar JSON</span>
+                        {exportLoadingJSON && <Spinner size="sm" style={{ marginLeft: 'auto' }} />}
+                    </MenuItemButton>
+                </li>
+            </NavList>
+
+            <Footer>
+                <Dropdown drop="up" style={{ flex: 1, minWidth: 0 }}>
+                    <Dropdown.Toggle
+                        as={UserToggle}
+                        picture={user?.picture}
+                        name={user?.name}
+                        email={user?.email}
+                    />
+                    <Dropdown.Menu style={{ width: '100%' }}>
+                        <Dropdown.Item
+                            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                        >
+                            <FaSignOutAlt style={{ marginRight: 10 }} />
+                            Log Out
+                        </Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
+                <ThemeToggle />
+            </Footer>
         </SidebarMenu>
     )
 }
