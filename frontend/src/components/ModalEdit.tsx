@@ -1,4 +1,5 @@
-import { Modal, Button, Form } from 'react-bootstrap'
+import { Modal, Button, Form, Row, Col } from 'react-bootstrap'
+import { FaSave, FaCompactDisc } from 'react-icons/fa'
 import { useEffect, useState } from 'react';
 import { AlbumData, Discs } from '../models/Album';
 import Artists from '../services/Artists'
@@ -110,12 +111,15 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
 
     return (
         <>
-            <Modal show={showModal} onHide={handleCloseModal}>
+            <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
                 <Form validated={validated} onSubmit={handleSubmit}>
                     <Modal.Header closeButton>
-                        <Modal.Title>{modalType}</Modal.Title>
+                        <Modal.Title className="d-flex align-items-center gap-2">
+                            <FaCompactDisc /> {modalType}
+                        </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>
+                    <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                        <div className="section-title mt-0">Identificação</div>
                         <Form.Group className="mb-3" controlId="editForm.ControlInput1">
                             <Form.Label>Titulo</Form.Label>
                             <Form.Control
@@ -160,6 +164,7 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
                             </Form.Select>
 
                             {modalType !== 'Editar Album' ? <Form.Check
+                                className="mt-2"
                                 type="checkbox"
                                 id="editForm.ControlInput2"
                                 label="Novo Artista"
@@ -174,135 +179,161 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
                                 }
                             /> : <></>}
                         </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput3">
-                            <Form.Label>Ano</Form.Label>
-                            <Form.Control
-                                required
-                                type="number"
-                                defaultValue={album?.releaseYear}
-                                min={1900}
-                                max={new Date().getFullYear() + 1}
-                                onChange={
-                                    (e) => handleInputChange('releaseYear', parseInt(e.target.value))
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput4">
-                            <Form.Label>Origem</Form.Label>
-                            <Form.Control
-                                type="text"
-                                defaultValue={album?.origin}
-                                onChange={
-                                    (e) => handleInputChange('origin', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput5">
-                            <Form.Label>Compra</Form.Label>
-                            <Form.Control
-                                type="date"
-                                defaultValue={album?.purchase ? album.purchase.split('T')[0] : ''}
-                                onChange={
-                                    (e) => handleInputChange('purchase', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput6">
-                            <Form.Label>Mídia</Form.Label>
-                            <Form.Select required aria-label="Default select example"
-                                onChange={
-                                    (e) => {
-                                        handleInputChange('media', e.target.value)
-                                        if (e.target.value.startsWith('VINIL')) {
-                                            setSetFieldsNA(true);
-                                        } else {
-                                            setSetFieldsNA(false);
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput3">
+                                    <Form.Label>Ano</Form.Label>
+                                    <Form.Control
+                                        required
+                                        type="number"
+                                        defaultValue={album?.releaseYear}
+                                        min={1900}
+                                        max={new Date().getFullYear() + 1}
+                                        onChange={
+                                            (e) => handleInputChange('releaseYear', parseInt(e.target.value))
                                         }
-                                    }
-                                }
-                                defaultValue={album?.media ? album?.media : "CD"}
-                            >
-                                <option>CD</option>
-                                <option>CD &gt; DVD</option>
-                                <option>CD &gt; Blu-ray</option>
-                                <option>DVD</option>
-                                <option>Blu-ray</option>
-                                <option>VINIL</option>
-                                <option>VINIL &gt; CD</option>
-                                <option>VINIL &gt; MP3</option>
-                                <option>VINIL 7'</option>
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput7">
-                            <Form.Label>Ano de Edição</Form.Label>
-                            <Form.Control
-                                type="number"
-                                defaultValue={album?.editionYear ?? ''}
-                                onChange={
-                                    (e) => handleInputChange('editionYear', parseInt(e.target.value))
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput8">
-                            <Form.Label>IFPI Mastering</Form.Label>
-                            <Form.Control
-                                type="text"
-                                defaultValue={setFieldsNA ? "NA" : album?.ifpiMastering}
-                                onChange={
-                                    (e) => handleInputChange('ifpiMastering', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput9">
-                            <Form.Label>IFPI Mould</Form.Label>
-                            <Form.Control
-                                type="text"
-                                defaultValue={setFieldsNA ? "NA" : album?.ifpiMould}
-                                onChange={
-                                    (e) => handleInputChange('ifpiMould', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput10">
-                            <Form.Label>Barcode</Form.Label>
-                            <Form.Control
-                                type="text"
-                                defaultValue={album?.barcode}
-                                onChange={
-                                    (e) => handleInputChange('barcode', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput12">
-                            <Form.Label>Lote</Form.Label>
-                            <Form.Control
-                                type="text"
-                                defaultValue={setFieldsNA ? "NA" : album?.lote}
-                                onChange={
-                                    (e) => handleInputChange('lote', e.target.value)
-                                }
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput13">
-                            <Form.Label>Número de Discos</Form.Label>
-                            <Form.Control
-                                type="number"
-                                min={1}
-                                defaultValue={album?.discs ? album?.discs.length : 1}
-                                onChange={
-                                    (e) => {
-                                        let len = album?.discs ? album?.discs.length : 1;
-                                        if (parseInt(e.target.value) > len) {
-                                            album?.discs.push({ discNumber: e.target.value, weight: 'NA', matriz: ['NA'] } as Discs)
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput6">
+                                    <Form.Label>Mídia</Form.Label>
+                                    <Form.Select required aria-label="Default select example"
+                                        onChange={
+                                            (e) => {
+                                                handleInputChange('media', e.target.value)
+                                                if (e.target.value.startsWith('VINIL')) {
+                                                    setSetFieldsNA(true);
+                                                } else {
+                                                    setSetFieldsNA(false);
+                                                }
+                                            }
                                         }
-                                        else if (parseInt(e.target.value) < len) {
-                                            album?.discs.pop();
+                                        defaultValue={album?.media ? album?.media : "CD"}
+                                    >
+                                        <option>CD</option>
+                                        <option>CD &gt; DVD</option>
+                                        <option>CD &gt; Blu-ray</option>
+                                        <option>DVD</option>
+                                        <option>Blu-ray</option>
+                                        <option>VINIL</option>
+                                        <option>VINIL &gt; CD</option>
+                                        <option>VINIL &gt; MP3</option>
+                                        <option>VINIL 7'</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput4">
+                                    <Form.Label>Origem</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        defaultValue={album?.origin}
+                                        onChange={
+                                            (e) => handleInputChange('origin', e.target.value)
                                         }
-                                        handleInputChange('discs', album?.discs ? album?.discs : [{ discNumber: e.target.value, weight: 'NA', matriz: ['NA'] } as Discs])
-                                    }
-                                }
-                            />
-                        </Form.Group>
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput5">
+                                    <Form.Label>Compra</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        defaultValue={album?.purchase ? album.purchase.split('T')[0] : ''}
+                                        onChange={
+                                            (e) => handleInputChange('purchase', e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput7">
+                                    <Form.Label>Ano de Edição</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        defaultValue={album?.editionYear ?? ''}
+                                        onChange={
+                                            (e) => handleInputChange('editionYear', parseInt(e.target.value))
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput10">
+                                    <Form.Label>Barcode</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        defaultValue={album?.barcode}
+                                        onChange={
+                                            (e) => handleInputChange('barcode', e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <div className="section-title">Prensagem</div>
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput8">
+                                    <Form.Label>IFPI Mastering</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        defaultValue={setFieldsNA ? "NA" : album?.ifpiMastering}
+                                        onChange={
+                                            (e) => handleInputChange('ifpiMastering', e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput9">
+                                    <Form.Label>IFPI Mould</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        defaultValue={setFieldsNA ? "NA" : album?.ifpiMould}
+                                        onChange={
+                                            (e) => handleInputChange('ifpiMould', e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput12">
+                                    <Form.Label>Lote</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        defaultValue={setFieldsNA ? "NA" : album?.lote}
+                                        onChange={
+                                            (e) => handleInputChange('lote', e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3" controlId="editForm.ControlInput13">
+                                    <Form.Label>Número de Discos</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        min={1}
+                                        defaultValue={album?.discs ? album?.discs.length : 1}
+                                        onChange={
+                                            (e) => {
+                                                let len = album?.discs ? album?.discs.length : 1;
+                                                if (parseInt(e.target.value) > len) {
+                                                    album?.discs.push({ discNumber: e.target.value, weight: 'NA', matriz: ['NA'] } as Discs)
+                                                }
+                                                else if (parseInt(e.target.value) < len) {
+                                                    album?.discs.pop();
+                                                }
+                                                handleInputChange('discs', album?.discs ? album?.discs : [{ discNumber: e.target.value, weight: 'NA', matriz: ['NA'] } as Discs])
+                                            }
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
                         {!album?.discs ? <></> :
                             album?.discs.map((disc, _) => (
                                 <div key={disc.discNumber}>
@@ -356,10 +387,11 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
                                 </div>
                             ))
                         }
-                        <Form.Group className="mb-3" controlId="editForm.ControlInput12">
-                            <Form.Label>Observação</Form.Label>
+                        <div className="section-title">Observação</div>
+                        <Form.Group className="mb-1" controlId="editForm.ControlInput12">
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows={2}
                                 defaultValue={setFieldsNA ? "NA" : album?.obs}
                                 onChange={
                                     (e) => handleInputChange('obs', e.target.value)
@@ -369,12 +401,17 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button type="submit" onClick={
+                        <Button variant="outline-secondary" onClick={handleCloseModal}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" variant="primary" onClick={
                             () => {
                                 setValidated(true);
                             }
 
-                        }>Salvar</Button>
+                        }>
+                            <FaSave className="me-2" />Salvar
+                        </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>

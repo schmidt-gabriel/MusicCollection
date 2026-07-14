@@ -37,7 +37,7 @@ const ModalDelete = ({ albuns, setAlbumInfo }: {
                         key={item.id}
                         action
                         className="album-list-item d-flex align-items-center gap-3"
-                        style={{ borderRadius: '0.75rem', cursor: 'pointer' }}
+                        style={{ cursor: 'pointer' }}
                         onClick={
                             () => {
                                 setAlbumInfo(item)
