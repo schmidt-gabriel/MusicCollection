@@ -1,112 +1,76 @@
-import {AlbumData} from '../models/Album';
+import { AlbumData } from '../models/Album';
 import DiscogsData from '../models/Discogs';
+import { apiFetch } from './Api';
 
+// All Discogs calls go through the authenticated backend proxy (see proxy.go),
+// which injects the DISCOGS_TOKEN server-side. The token never reaches the
+// browser and never appears in a URL the client builds.
 
-let tokenDiscogs = "" as string;
-
-async function GetTokenDiscogs() {
-    if (tokenDiscogs !== "") {
-        return tokenDiscogs;
-    }
-    // Set from the ID token custom claims on login (see app.tsx).
-    tokenDiscogs = sessionStorage.getItem("DISCOGS_TOKEN") ?? "";
-    return tokenDiscogs;
+function queryString(params: Record<string, string | undefined>): string {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+            qs.set(key, value);
+        }
+    });
+    return qs.toString();
 }
 
-function objToQueryString(obj: { [key: string]: any }) {
-    const keyValuePairs = [];
-    for (const key in obj) {
-        keyValuePairs.push(encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
-    }
-    return keyValuePairs.join('&');
-}
-
-async function fetchDiscogs(queryParameters: Object): Promise<Response> {
-    const requestOptions = {
-        method: 'GET',
-    };
-
-    const queryString = objToQueryString(queryParameters);
-
-    return await fetch(`https://api.discogs.com/database/search?${queryString}`, requestOptions);;
+async function searchDiscogs(params: Record<string, string | undefined>): Promise<any> {
+    return await apiFetch<any>(`/discogs/search?${queryString(params)}`);
 }
 
 async function getTracks(data: DiscogsData): Promise<any> {
-    const tracks = await fetch(`https://api.discogs.com/${data.type}s/${data.id}`);
-    const result = await tracks.json();
+    const result = await apiFetch<any>(`/discogs/tracks?${queryString({ type: data.type, id: String(data.id) })}`);
     return result["tracklist"];
 }
 
 async function GetDiscogs(album: AlbumData): Promise<DiscogsData[]> {
-    let queryParameters: Record<string, string> = {
-        "token": await GetTokenDiscogs(),
-        "artist": album.artist,
-        "release_title": album.title,
-        "barcode": album.barcode
-    };
-
-    Object.keys(queryParameters).forEach(key => {
-        if (queryParameters[key] === undefined) {
-            delete queryParameters[key];
-        }
-    });
-
-    const response = await fetchDiscogs(queryParameters);
-
-    if (response.status === 200) {
-        let data = await response.json();
+    try {
+        let data = await searchDiscogs({
+            artist: album.artist,
+            release_title: album.title,
+            barcode: album.barcode,
+        });
         data = data["results"];
 
-        if (data.isEmpty) {
-            const queryParametersFiltered = {
-                "token": await GetTokenDiscogs(),
-                "artist": album.artist,
-                "release_title": album.title,
-            };
-            const responseFiltered = await fetchDiscogs(queryParametersFiltered);
-            let dataFiltered = await responseFiltered.json();
-            dataFiltered = dataFiltered["results"];
+        if (data === undefined || data.length === 0) {
+            const dataFiltered = (await searchDiscogs({
+                artist: album.artist,
+                release_title: album.title,
+            }))["results"];
 
-            if (dataFiltered.isEmpty) {
+            if (dataFiltered === undefined || dataFiltered.length === 0) {
                 return [] as DiscogsData[];
             }
             data = dataFiltered;
         }
-        if (data === undefined) {
-            return [] as DiscogsData[];
-        }
 
         let discogsData = data as DiscogsData[];
-
         if (discogsData === undefined || discogsData.length === 0) {
             return [] as DiscogsData[];
         }
 
         const tracks = await getTracks(discogsData[0]);
-        let urlsList: [{ id: number, uri: string }] = [] as any;
-        for (const item of data) {
-            urlsList.push({
-                id: item["id"] as number,
-                uri: item["uri"] as string
-            });
-        }
+        const urlsList: { id: number, uri: string }[] = data.map((item: any) => ({
+            id: item["id"] as number,
+            uri: item["uri"] as string,
+        }));
 
         discogsData.forEach((item) => {
             item.len = 1;
             item.tracks = tracks;
-            item.urls = urlsList;
+            item.urls = urlsList as [{ id: number, uri: string }];
         });
 
         return discogsData;
-    } else {
+    } catch (error) {
+        console.error(error);
         return [] as DiscogsData[];
     }
 }
 
 async function GetById(discogsId: string) {
-    const queryParameters = {
-        method: 'GET'
-    };
     const REGEX = /\d+/g;
     const discogsIdFiltered = discogsId.match(REGEX);
     if (discogsIdFiltered === null) {
@@ -114,10 +78,9 @@ async function GetById(discogsId: string) {
     }
 
     try {
-        const response = await fetch(`https://api.discogs.com/releases/${discogsIdFiltered[0]}?token=${await GetTokenDiscogs()}`, queryParameters);
-        const data = await response.json();
+        const data = await apiFetch<any>(`/discogs/release?${queryString({ id: discogsIdFiltered[0] })}`);
 
-        if (data.hasOwnProperty('message')) {
+        if (Object.prototype.hasOwnProperty.call(data, 'message')) {
             throw new Error(data.message);
         }
 
@@ -158,9 +121,6 @@ async function GetById(discogsId: string) {
         console.error(error);
         return {} as DiscogsData;
     }
-
-
-
 }
 
 export {

@@ -470,6 +470,12 @@ func main() {
 	router.Handle("/aggregation", jwt.EnsureValidToken()(http.HandlerFunc(aggregation))).Methods("POST")
 	router.Handle("/findAndSort", jwt.EnsureValidToken()(http.HandlerFunc(findAndSort))).Methods("POST")
 
+	// Server-side proxies so the Spotify/Discogs secrets never reach the browser.
+	router.Handle("/spotify/search", jwt.EnsureValidToken()(http.HandlerFunc(spotifySearch))).Methods("GET")
+	router.Handle("/discogs/search", jwt.EnsureValidToken()(http.HandlerFunc(discogsSearch))).Methods("GET")
+	router.Handle("/discogs/release", jwt.EnsureValidToken()(http.HandlerFunc(discogsRelease))).Methods("GET")
+	router.Handle("/discogs/tracks", jwt.EnsureValidToken()(http.HandlerFunc(discogsTracks))).Methods("GET")
+
 	fmt.Println("Server running on port 3000")
 	http.ListenAndServe(":3000", handlers.LoggingHandler(os.Stdout, corsMiddleware(router)))
 

@@ -33,6 +33,19 @@ export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
     if (path === '/aggregation' && Array.isArray(body) && body[0]?.$project) {
         return albums.map((a) => ({ _id: a.id, TITLE: a.title, ARTIST: a.artist })) as T;
     }
+    // Spotify/Discogs backend proxies (query string follows the path).
+    if (path.startsWith('/spotify/search')) {
+        return { external_urls: { spotify: 'https://open.spotify.com' }, artists: [{ external_urls: { spotify: 'https://open.spotify.com' } }] } as T;
+    }
+    if (path.startsWith('/discogs/search')) {
+        return { results: [] } as T;
+    }
+    if (path.startsWith('/discogs/tracks')) {
+        return { tracklist: [] } as T;
+    }
+    if (path.startsWith('/discogs/release')) {
+        return {} as T;
+    }
     switch (path) {
         case '/artists':
             return ['1349', '2112', 'BLACK SABBATH', 'IRON MAIDEN', 'RUSH'] as T;

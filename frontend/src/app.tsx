@@ -47,18 +47,9 @@ const App = () => {
         };
         registerTokenGetter(fetchApiToken);
 
-        // Spotify/Discogs credentials come as custom claims on the ID token
-        // (set by the post-login Action in Auth0). Match each claim by its
-        // name, ignoring the namespace, so the Action can use any namespace.
-        const claims = (user as Record<string, unknown> | undefined) ?? {};
-        for (const key of ['DISCOGS_TOKEN', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET']) {
-            const match = Object.entries(claims).find(
-                ([k]) => k === key || k.endsWith('/' + key),
-            );
-            if (typeof match?.[1] === 'string' && match[1]) {
-                sessionStorage.setItem(key, match[1]);
-            }
-        }
+        // Spotify/Discogs credentials are NOT delivered to the browser anymore:
+        // the backend holds them and the clients call the authenticated
+        // /spotify and /discogs proxies. Remove the Auth0 Action claims too.
 
         (async () => {
             try {

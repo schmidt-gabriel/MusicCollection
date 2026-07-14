@@ -1,6 +1,6 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { AlbumData as Album } from '../models/Album'
-import { Image, ListGroup, Row, Col, Container, Button, Badge, Card } from 'react-bootstrap'
+import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal } from 'react-bootstrap'
 import DateTimeFormat from '../services/Utils';
 import * as FaIcons from 'react-icons/fa'
 
@@ -14,8 +14,8 @@ function numberToLetter(number: number) {
     return result;
 }
 
-const InfoItem = ({ label, children }: { label: string, children: ReactNode }) => (
-    <div className="info-item">
+const InfoItem = ({ label, children, wide }: { label: string, children: ReactNode, wide?: boolean }) => (
+    <div className={wide ? 'info-item wide' : 'info-item'}>
         <span className="info-label">{label}</span>
         <span className="info-value">{children === '' || children === undefined || children === null ? '—' : children}</span>
     </div>
@@ -33,6 +33,8 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     handleShowModalDelete: () => void,
     handleShowModalFixDiscogs: () => void
 }) => {
+    const [showCover, setShowCover] = useState(false);
+
     if (albumInfo === undefined || albumInfo.title === '') {
         return (
             <Container className="panel" style={{ padding: '1rem', height: '100%' }}>
@@ -55,7 +57,14 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
         <Container fluid className="panel" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto' }}>
             {/* Hero: cover + title/artist + quick badges */}
             <div className="album-hero">
-                <Image className="album-hero-cover" src={albumInfo.discogs.cover_image} alt="Capa do Album" />
+                <Image
+                    className="album-hero-cover"
+                    src={albumInfo.discogs.cover_image}
+                    alt="Capa do Album"
+                    role="button"
+                    title="Clique para ampliar"
+                    onClick={() => albumInfo.discogs.cover_image && setShowCover(true)}
+                />
                 <div className="flex-grow-1" style={{ minWidth: 0 }}>
                     <h3 className="album-hero-title">{albumInfo.title}</h3>
                     <div className="album-hero-artist">{albumInfo.artist}</div>
@@ -105,9 +114,10 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                 <InfoItem label="IFPI Mould">{albumInfo.ifpiMould}</InfoItem>
                 {albumInfo.discs?.[0]?.matriz ? null : <InfoItem label="Matriz">{albumInfo.matriz}</InfoItem>}
                 <InfoItem label="Lote">{albumInfo.lote}</InfoItem>
-                <InfoItem label="Observação">{albumInfo.obs}</InfoItem>
                 <InfoItem label="Discogs Fixado"><YesNo ok={discogsPinned} />{!discogsPinned && albumInfo.discogs.len ? ` (${albumInfo.discogs.len})` : ''}</InfoItem>
                 <InfoItem label="Spotify"><YesNo ok={hasSpotify} /></InfoItem>
+                {/* Observação can be long: keep it last and let it span the full width. */}
+                <InfoItem label="Observação" wide>{albumInfo.obs}</InfoItem>
             </div>
 
             {/* Discs */}
@@ -156,6 +166,16 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
             <div className="text-muted small mt-3">
                 ID: <code>{albumInfo.id || '(novo)'}</code>
             </div>
+
+            <Modal show={showCover} onHide={() => setShowCover(false)} centered size="lg">
+                <Modal.Body
+                    className="p-0 d-flex justify-content-center"
+                    style={{ cursor: 'zoom-out' }}
+                    onClick={() => setShowCover(false)}
+                >
+                    <Image src={albumInfo.discogs.cover_image} alt={albumInfo.title} fluid />
+                </Modal.Body>
+            </Modal>
         </Container>
     );
 }

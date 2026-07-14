@@ -23,7 +23,7 @@ Frontend (`cd frontend`):
 
 Backend (`cd backend/src`):
 - `go build ./...` to compile, `go vet ./...` to check.
-- `go run .` needs `MONGODB_URI`, `MONGODB_DATABASE`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` set (each is `log.Fatal` if missing). There are no Go tests.
+- `go run .` needs `MONGODB_URI`, `MONGODB_DATABASE`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` set (each is `log.Fatal` if missing). `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN` are optional (only the `/spotify` and `/discogs` proxies need them; they return a clear error if unset). There are no Go tests.
 
 Mobile (`cd mobile`):
 - `flutter pub get`, then `flutter run` (launch on a booted simulator/device; debug builds only start from Flutter tooling).
@@ -39,9 +39,20 @@ Auth0 with Authorization Code + PKCE. No client secret ships in any app.
 Runtime config is delivered as **custom claims on the Auth0 ID token**, set by a
 post-login Action from Action Secrets, so it can change in Auth0 without
 rebuilding a client:
-- `API_DOMAIN` (backend host), `DISCOGS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`.
+- `API_DOMAIN` (backend host). The mobile client still reads `DISCOGS_TOKEN` (and Spotify creds) from claims — see the security note below.
 - Both clients match a claim **by its name, ignoring the namespace** (frontend: `src/app.tsx`; mobile: `AuthService._claimOrEnv` in `lib/src/utils/auth.dart`), so the Action namespace can be any URI (currently `https://music-app.claims/`). Do not reintroduce a hardcoded namespace.
 - `.env` values (`API_DOMAIN`, `DISCOGS_TOKEN` on mobile) are only an optional local fallback; the claim wins.
+
+**Third-party secrets are server-side (web).** The Spotify and Discogs
+credentials must not reach the browser. The Go backend holds
+`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN` as env vars and
+exposes authenticated proxies (`/spotify/search`, `/discogs/search`,
+`/discogs/release`, `/discogs/tracks`; see `backend/src/proxy.go`). The web
+client calls only those (`frontend/src/services/Spotify.tsx`, `Discogs.tsx`) and
+no longer stores or receives these secrets. **The mobile app still calls Discogs
+directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so the
+Auth0 Action claims for these secrets **must stay until mobile is migrated to
+the same proxies**; only then remove them from the Action.
 
 The **API audience** (`https://music-collection-api`) is different from all of
 the above: it is a stable, domain-independent identifier the backend validates
@@ -73,10 +84,12 @@ guard when adding list calls.
 
 Go + gorilla/mux on port 3000. `jwt.EnsureValidToken()` (Auth0) guards every
 data route; `/health` is open. Data routes include `/artists`, `/album/artist`,
-`/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, plus the
-generic `/find`, `/findAndSort`, `/aggregation`. On success `/new/album` returns
-the new 24-hex id and `/update/album` returns a modified count; the frontend
-uses that shape to tell insert from update.
+`/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, the generic
+`/find`, `/findAndSort`, `/aggregation`, plus the third-party proxies
+`/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`
+(all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
+`/update/album` returns a modified count; the frontend uses that shape to tell
+insert from update.
 
 ## Frontend
 

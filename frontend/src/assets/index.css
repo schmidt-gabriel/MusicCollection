@@ -161,6 +161,11 @@ body {
   box-shadow: var(--shadow);
   flex-shrink: 0;
   background: rgba(99, 102, 241, 0.06);
+  cursor: zoom-in;
+  transition: transform 0.15s ease;
+}
+.album-hero-cover:hover {
+  transform: scale(1.02);
 }
 .album-hero-title {
   font-size: 1.5rem;
@@ -194,6 +199,13 @@ body {
   flex-direction: column;
   padding: 0.5rem 0;
   border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+/* Full-width row for long values (e.g. Observação). */
+.info-item.wide {
+  grid-column: 1 / -1;
+}
+.info-item.wide .info-value {
+  white-space: pre-wrap;
 }
 .info-label {
   font-size: 0.68rem;
