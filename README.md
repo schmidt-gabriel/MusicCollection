@@ -178,15 +178,13 @@ Environment="AUTH0_CLIENT_SECRET=<auth0-client-secret>"
 Environment="DISCOGS_TOKEN=<discogs-token>"
 Environment="SPOTIFY_CLIENT_ID=<spotify-client-id>"
 Environment="SPOTIFY_CLIENT_SECRET=<spotify-client-secret>"
-Environment="GENIUS_ACCESS_TOKEN=<genius-client-access-token>"
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-`DISCOGS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and
-`GENIUS_ACCESS_TOKEN` back the `/spotify`, `/discogs` and `/genius` proxies, so
-the web client never receives them. `GENIUS_ACCESS_TOKEN` is the Client Access
-Token from the Genius API Clients dashboard (not the client id/secret). The
-mobile app still reads Discogs/Spotify from Auth0 claims, so keep those Action
-claims until mobile is migrated to the proxies.
+`DISCOGS_TOKEN`, `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` back the
+`/spotify` and `/discogs` proxies, so the web client never receives them.
+Lyrics come from the `/lyrics` proxy (LRCLIB, no key required). The mobile app
+still reads Discogs/Spotify from Auth0 claims, so keep those Action claims until
+mobile is migrated to the proxies.

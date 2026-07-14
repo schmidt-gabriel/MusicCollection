@@ -475,7 +475,6 @@ func main() {
 	router.Handle("/discogs/search", jwt.EnsureValidToken()(http.HandlerFunc(discogsSearch))).Methods("GET")
 	router.Handle("/discogs/release", jwt.EnsureValidToken()(http.HandlerFunc(discogsRelease))).Methods("GET")
 	router.Handle("/discogs/tracks", jwt.EnsureValidToken()(http.HandlerFunc(discogsTracks))).Methods("GET")
-	router.Handle("/genius/search", jwt.EnsureValidToken()(http.HandlerFunc(geniusSearch))).Methods("GET")
 	router.Handle("/lyrics", jwt.EnsureValidToken()(http.HandlerFunc(lyricsSearch))).Methods("GET")
 
 	fmt.Println("Server running on port 3000")

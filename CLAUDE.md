@@ -43,20 +43,18 @@ rebuilding a client:
 - Both clients match a claim **by its name, ignoring the namespace** (frontend: `src/app.tsx`; mobile: `AuthService._claimOrEnv` in `lib/src/utils/auth.dart`), so the Action namespace can be any URI (currently `https://music-app.claims/`). Do not reintroduce a hardcoded namespace.
 - `.env` values (`API_DOMAIN`, `DISCOGS_TOKEN` on mobile) are only an optional local fallback; the claim wins.
 
-**Third-party secrets are server-side (web).** The Spotify, Discogs and Genius
+**Third-party secrets are server-side (web).** The Spotify and Discogs
 credentials must not reach the browser. The Go backend holds
-`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN`,
-`GENIUS_ACCESS_TOKEN` as env vars and exposes authenticated proxies
-(`/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
-`/genius/search`; see `backend/src/proxy.go`). The web client calls only those
-(`frontend/src/services/Spotify.tsx`, `Discogs.tsx`, `Lyrics.tsx`) and no longer
-stores or receives these secrets. Genius has no client_credentials grant and its
-API returns only the song page URL (never lyrics text), so it is the fallback
-"open on Genius" link. Actual lyrics text comes from the `/lyrics` proxy, which
-hits LRCLIB (keyless, community-sourced, returns plain + synced/LRC); the `Letra`
-button per track shows it in a modal (`frontend/src/services/Lyrics.tsx`). **The mobile app still calls Discogs
-directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so the
-Auth0 Action claims for these secrets **must stay until mobile is migrated to
+`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN` as env vars and
+exposes authenticated proxies (`/spotify/search`, `/discogs/search`,
+`/discogs/release`, `/discogs/tracks`; see `backend/src/proxy.go`). The web
+client calls only those (`frontend/src/services/Spotify.tsx`, `Discogs.tsx`) and
+no longer stores or receives these secrets. Lyrics text comes from the `/lyrics`
+proxy, which hits LRCLIB (keyless, community-sourced, returns plain + synced/LRC);
+the `Letra` button per track shows it in a modal (`frontend/src/services/Lyrics.tsx`),
+or "Letra não encontrada" when LRCLIB has nothing. **The mobile app still calls
+Discogs directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so
+the Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
 
 The **API audience** (`https://music-collection-api`) is different from all of
@@ -92,7 +90,7 @@ data route; `/health` is open. Data routes include `/artists`, `/album/artist`,
 `/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, the generic
 `/find`, `/findAndSort`, `/aggregation`, plus the third-party proxies
 `/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
-`/genius/search`, `/lyrics` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
+`/lyrics` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
 `/update/album` returns a modified count; the frontend uses that shape to tell
 insert from update.
 

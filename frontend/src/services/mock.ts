@@ -46,9 +46,6 @@ export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
     if (path.startsWith('/discogs/release')) {
         return {} as T;
     }
-    if (path.startsWith('/genius/search')) {
-        return { url: 'https://genius.com', title: 'Mock', fullTitle: 'Mock Song', thumb: '' } as T;
-    }
     if (path.startsWith('/lyrics')) {
         return { trackName: 'Mock', artistName: 'Mock', plainLyrics: '[Letra de exemplo do mock]\nLinha um\nLinha dois\nLinha três', syncedLyrics: '' } as T;
     }
