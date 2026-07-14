@@ -55,6 +55,48 @@ If a port is already taken, override it in `.env` (`WEB_PORT`, `API_PORT`,
 `MONGO_PORT`). Stop with `docker compose down` (add `-v` to also wipe the Mongo
 volume).
 
+## Working on one project
+
+Frontend:
+
+```bash
+cd frontend
+npm ci
+npm run dev              # Vite dev server on http://localhost:3000
+npm run build            # tsc --noEmit + Vite build (the CI check)
+REACT_APP_MOCK=1 npm run dev   # fixtures only, no Auth0 or API
+```
+
+Backend (needs a MongoDB and the Auth0 env vars, easiest via `docker compose`):
+
+```bash
+cd backend/src
+go build ./...
+go run .                 # requires MONGODB_URI, MONGODB_DATABASE, AUTH0_DOMAIN, AUTH0_AUDIENCE
+```
+
+Mobile:
+
+```bash
+cd mobile
+flutter pub get
+flutter run              # on a booted simulator/device
+flutter analyze
+flutter test             # single test: flutter test test/api_test.dart
+```
+
+## Authentication and configuration
+
+Auth0 with Authorization Code + PKCE (no client secret in any app). The backend
+host and the Discogs/Spotify tokens are delivered as **custom claims on the ID
+token**, set by a post-login Auth0 Action from Action Secrets, so they can be
+changed in Auth0 without rebuilding a client. The apps match each claim by name
+and ignore the namespace, so the Action namespace can be any URI.
+
+The API audience (`https://music-collection-api`) is a separate, stable
+identifier the backend validates and the clients request at login. It is not the
+host and it is not a claim; keep it constant even when the backend host changes.
+
 ## CI/CD
 
 GitHub Actions workflows are path‑filtered so each one only runs when its folder
