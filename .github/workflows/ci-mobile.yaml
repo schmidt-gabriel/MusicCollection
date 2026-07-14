@@ -3,7 +3,7 @@ name: CI Mobile
 on:
   pull_request:
     paths:
-      - 'music_mobile/**'
+      - 'mobile/**'
       - '.github/workflows/ci-mobile.yaml'
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: music_mobile
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 

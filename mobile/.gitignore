@@ -31,7 +31,6 @@ doc/api/
 ios/
 android/
 web/
-/music_web_api/
 
 # Android release signing secrets: never commit these, even if the
 # platform folders above are later un-ignored.

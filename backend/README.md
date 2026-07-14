@@ -40,14 +40,14 @@ The Music Collection Manager is a software application designed to help you orga
 
 ## Docker Compose Installation
 1. Clone the repository: `git clone https://github.com/gabrieloliveira95/music_web_api.git`
-2. Navigate to the project directory: `cd music_web_api`
+2. Navigate to the project directory: `cd backend`
 3. Create .env file
 4. Start the application: `docker-compose up`
 5. Open your web browser and navigate to `http://localhost:3000`
 6. Use the provided interface to manage your music collection.
 
 ## API Installation
-1. Navigate to the project directory: `cd music_web_api/src`
+1. Navigate to the project directory: `cd backend/src`
 2. Start the application: `go run main.go`
 3. Open your web browser and navigate to `http://localhost:3000`
 4. Use the provided interface to manage your music collection.

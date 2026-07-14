@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'music_web_app/**'
+      - 'frontend/**'
       - '.github/workflows/deploy-ui.yaml'
 
 concurrency:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: music_web_app
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: music_web_app/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
 

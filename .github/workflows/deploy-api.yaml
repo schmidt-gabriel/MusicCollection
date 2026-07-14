@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'music_web_api/**'
+      - 'backend/**'
       - '.github/workflows/deploy-api.yaml'
 
 concurrency:
@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: music_web_api/src/go.mod
+          go-version-file: backend/src/go.mod
 
       - name: Set up SSH
         env:
@@ -44,7 +44,7 @@ jobs:
           esac
 
       - name: Build binary
-        working-directory: music_web_api/src
+        working-directory: backend/src
         env:
           CGO_ENABLED: 0
           GOOS: linux

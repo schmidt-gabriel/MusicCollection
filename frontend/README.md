@@ -73,7 +73,7 @@ REACT_APP_API_DOMAIN=api.disccolection.publicvm.com
    when the backend host moves.
 3. In the API's **Application Access** tab, authorize the SPA application
    (and any other client that consumes the API, e.g. the mobile app).
-4. The backend (`music_web_api`) must validate the same audience:
+4. The backend (`backend`) must validate the same audience:
    `AUTH0_AUDIENCE=https://music-collection-api`.
 
 ## Spotify/Discogs credentials (post-login Action)

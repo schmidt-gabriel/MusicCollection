@@ -21,20 +21,20 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: music_web_api/src/go.mod
+          go-version-file: backend/src/go.mod
 
       - name: Build binary
-        working-directory: music_web_api/src
+        working-directory: backend/src
         env:
           CGO_ENABLED: 0
           GOOS: linux
           GOARCH: ${{ matrix.arch }}
         run: |
           mkdir -p "$GITHUB_WORKSPACE/dist"
-          BIN_NAME="music_web_api-linux-${GOARCH}"
+          BIN_NAME="backend-linux-${GOARCH}"
           go build -trimpath -ldflags="-s -w" -o "$GITHUB_WORKSPACE/dist/${BIN_NAME}" .
 
       - name: Upload binary to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/music_web_api-linux-${{ matrix.arch }}
+          files: dist/backend-linux-${{ matrix.arch }}

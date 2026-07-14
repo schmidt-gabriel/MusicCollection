@@ -7,9 +7,9 @@ Discogs and Spotify metadata.
 
 | Folder | What it is | Stack |
 | --- | --- | --- |
-| [`music_web_app`](music_web_app) | Web UI | React + Vite + TypeScript |
-| [`music_web_api`](music_web_api) | Backend API | Go + MongoDB |
-| [`music_mobile`](music_mobile) | Mobile app | Flutter |
+| [`frontend`](frontend) | Web UI | React + Vite + TypeScript |
+| [`backend`](backend) | Backend API | Go + MongoDB |
+| [`mobile`](mobile) | Mobile app | Flutter |
 
 Authentication is handled by Auth0 (Authorization Code + PKCE). The API host and
 third‑party tokens are delivered as custom claims on the ID token, so they can be
@@ -62,9 +62,9 @@ changes:
 
 | Workflow | Trigger | Does |
 | --- | --- | --- |
-| `ci.yaml` | PR touching `music_web_app/**` | `tsc --noEmit` + Vite build |
-| `deploy-ui.yaml` | push to `main` touching `music_web_app/**` | build + scp the UI to the VM |
-| `deploy-api.yaml` | push to `main` touching `music_web_api/**` | build the Go binary and swap it on the VM |
+| `ci.yaml` | PR touching `frontend/**` | `tsc --noEmit` + Vite build |
+| `deploy-ui.yaml` | push to `main` touching `frontend/**` | build + scp the UI to the VM |
+| `deploy-api.yaml` | push to `main` touching `backend/**` | build the Go binary and swap it on the VM |
 | `api.yml` | git tag | publish Linux `amd64`/`arm64` binaries to a Release |
 
 The deploy workflows expect these repository secrets: `DEPLOY_SSH_KEY`,
