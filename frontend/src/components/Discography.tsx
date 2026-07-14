@@ -5,12 +5,13 @@ const ModalDelete = ({ albuns, setAlbumInfo }: {
     albuns: AlbumData[],
     setAlbumInfo: Function
 }) => {
-    if (!Array.isArray(albuns)) {
+    if (!Array.isArray(albuns) || albuns.length === 0) {
         return (
             <Container className="panel" style={
                 {
                     padding: '1rem',
                     height: '100%',
+                    minWidth: '16rem',
                 }
             }>
             </Container>
@@ -21,6 +22,7 @@ const ModalDelete = ({ albuns, setAlbumInfo }: {
             {
                 padding: '1rem',
                 height: '100%',
+                minWidth: '16rem',
                 overflowY: 'auto',
             }
         }>
