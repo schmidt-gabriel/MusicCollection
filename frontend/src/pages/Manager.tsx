@@ -155,7 +155,7 @@ const Home: React.FunctionComponent = () => {
                 </div>
                 <br />
                 <Row className="flex-grow-1" style={{ minHeight: 0 }}>
-                    <Col className="h-100" style={{ minWidth: 0 }}>
+                    <Col xs="auto" className="h-100" style={{ maxWidth: '50%' }}>
                         {actions.loading
                             ? <Spinner animation="border" />
                             : <Discograpy
