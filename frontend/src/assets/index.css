@@ -146,6 +146,87 @@ body {
   color: var(--brand-dark);
 }
 
+/* ===== Album info panel ===== */
+.album-hero {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.album-hero-cover {
+  width: 168px;
+  height: 168px;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  background: rgba(99, 102, 241, 0.06);
+}
+.album-hero-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+.album-hero-artist {
+  color: var(--muted);
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 1.5rem 0 0.6rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1.5rem;
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+.info-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+.info-value {
+  font-size: 0.95rem;
+  color: var(--text);
+  word-break: break-word;
+}
+:root[data-theme='dark'] .info-item {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  gap: 0.75rem;
+  padding: 2rem;
+}
+.empty-state svg {
+  opacity: 0.35;
+}
+
 /* Graphite button, matches the sidebar gradient */
 .btn-graphite {
   background: linear-gradient(180deg, #3a4150 0%, #23272f 100%);

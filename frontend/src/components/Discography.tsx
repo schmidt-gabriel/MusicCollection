@@ -1,4 +1,5 @@
 import { Container, ListGroup } from 'react-bootstrap'
+import { FaSearch } from 'react-icons/fa'
 import {AlbumData} from '../models/Album'
 
 const ModalDelete = ({ albuns, setAlbumInfo }: {
@@ -14,6 +15,10 @@ const ModalDelete = ({ albuns, setAlbumInfo }: {
                     minWidth: '16rem',
                 }
             }>
+                <div className="empty-state">
+                    <FaSearch size={40} />
+                    <small>Busque por um artista ou título<br />para listar os álbuns</small>
+                </div>
             </Container>
         );
     }

@@ -14,7 +14,7 @@ import Discograpy from '../components/Discography';
 import AlbumModals from '../components/AlbumModals';
 import { useAlbumActions } from '../hooks/useAlbumActions';
 import { showToast } from '../components/Toasts';
-import { FaSpotify } from 'react-icons/fa';
+import { FaSpotify, FaPlus } from 'react-icons/fa';
 
 const Home: React.FunctionComponent = () => {
     const actions = useAlbumActions();
@@ -123,7 +123,9 @@ const Home: React.FunctionComponent = () => {
                                         actions.handleShowModal();
                                     }, 100);
                                 }
-                            }>Adicionar</Button>
+                            }>
+                            <FaPlus className="me-2" />Adicionar
+                        </Button>
                     </div>
                     <div style={{ flex: '1 1 240px', minWidth: '240px', maxWidth: '360px' }}>
                         <ReactSearchAutocomplete
@@ -140,9 +142,10 @@ const Home: React.FunctionComponent = () => {
                             }
                         />
                     </div>
-                    <div>
+                    <div style={{ marginLeft: 'auto' }}>
                         {spotifyArtist ?
-                            <FaSpotify size={50} color={'green'}
+                            <FaSpotify size={44} color={'#1DB954'}
+                                title="Abrir artista no Spotify"
                                 onClick={
                                     () => {
                                         window.open(spotifyArtist[0]["external_urls"]["spotify"], '_blank')

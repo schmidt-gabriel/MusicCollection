@@ -135,9 +135,13 @@ const UserMeta = styled.div`
 const UserName = styled.div`
     font-size: 0.85rem;
     font-weight: 600;
-    white-space: nowrap;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    /* Wrap to at most two lines instead of cutting a long single-token name. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
 `
 
 const UserButton = styled.div`
