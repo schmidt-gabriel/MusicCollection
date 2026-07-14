@@ -111,3 +111,82 @@ changes:
 
 The deploy workflows expect these repository secrets: `DEPLOY_SSH_KEY`,
 `DEPLOY_HOST`, `DEPLOY_USER`, and `ENV_FILE` (the UI's production `.env`).
+
+## Production server (Oracle VM)
+
+The frontend build is served by nginx from `/var/www/music-app`; the Go API runs
+as a systemd service and nginx reverse‑proxies it. This section is an operational
+runbook, not something the app reads.
+
+### DNS
+
+DNS for the domains is managed at **DNS Exit** (dnsexit.com). `publicvm.com` is a
+DNS Exit free dynamic‑DNS zone, so `disccolection.publicvm.com` and its
+subdomains are records there. Point each host (root, `app.`, `api.`) at the VM's
+public IP.
+
+Two domains are in use, and they are spelled differently, watch the double `l`:
+
+| Domain | Notes |
+| --- | --- |
+| `disccollection.shop` (`www.`, `app.`, `api.`) | primary, two `l` |
+| `disccolection.publicvm.com` (`app.`, `api.`) | DNS Exit, one `l` |
+
+### TLS certificates (Certbot)
+
+Certificates are issued with Certbot's nginx plugin. To issue or renew the
+publicvm.com bundle:
+
+```bash
+sudo certbot --nginx -d disccolection.publicvm.com -d app.disccolection.publicvm.com -d api.disccolection.publicvm.com
+```
+
+Certbot writes the certs under `/etc/letsencrypt/live/<domain>/` and edits the
+nginx server blocks in place. The nginx config lives at
+`/etc/nginx/sites-available/music-app` and has one `server` block per host plus a
+port‑80 block that redirects every host to HTTPS. The root/`app.` hosts serve the
+SPA (`root /var/www/music-app; try_files $uri $uri/ /index.html;`); the `api.`
+host does `proxy_pass http://0.0.0.0:3000;`.
+
+### API service (systemd)
+
+The API runs from `/home/ubuntu/music-go-api` as the `music_api` service. Config
+is passed as environment variables in the unit file (the app `log.Fatal`s if the
+required ones are missing). After editing the unit, reload and restart:
+
+```bash
+sudo nano /etc/systemd/system/music_api.service
+sudo systemctl daemon-reload
+sudo systemctl restart music_api.service
+```
+
+Unit file shape (real secret values live only on the server, never commit them):
+
+```ini
+[Unit]
+Description=Music API service.
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/music-go-api
+Environment="MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
+Environment="MONGODB_DATABASE=MEDIA"
+Environment="AUTH0_DOMAIN=<tenant>.us.auth0.com"
+Environment="AUTH0_AUDIENCE=https://music-collection-api"
+Environment="AUTH0_CLIENT_ID=<auth0-client-id>"
+Environment="AUTH0_CLIENT_SECRET=<auth0-client-secret>"
+Environment="DISCOGS_TOKEN=<discogs-token>"
+Environment="SPOTIFY_CLIENT_ID=<spotify-client-id>"
+Environment="SPOTIFY_CLIENT_SECRET=<spotify-client-secret>"
+Environment="GENIUS_ACCESS_TOKEN=<genius-client-access-token>"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`DISCOGS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and
+`GENIUS_ACCESS_TOKEN` back the `/spotify`, `/discogs` and `/genius` proxies, so
+the web client never receives them. `GENIUS_ACCESS_TOKEN` is the Client Access
+Token from the Genius API Clients dashboard (not the client id/secret). The
+mobile app still reads Discogs/Spotify from Auth0 claims, so keep those Action
+claims until mobile is migrated to the proxies.

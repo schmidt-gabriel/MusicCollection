@@ -13,17 +13,18 @@ import (
 	"time"
 )
 
-// These handlers keep the Spotify and Discogs credentials on the server. The
-// browser talks only to these authenticated endpoints (see the frontend
-// services/Spotify.tsx and services/Discogs.tsx); no third-party secret is ever
-// shipped to the client. Credentials come from environment variables:
-// SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, DISCOGS_TOKEN.
+// These handlers keep the Spotify, Discogs and Genius credentials on the server.
+// The browser talks only to these authenticated endpoints (see the frontend
+// services/Spotify.tsx, Discogs.tsx and Lyrics.tsx); no third-party secret is
+// ever shipped to the client. Credentials come from environment variables:
+// SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, DISCOGS_TOKEN, GENIUS_ACCESS_TOKEN.
 
 const (
 	discogsAPI   = "https://api.discogs.com"
 	discogsUA    = "MusicCollection/1.0"
 	spotifyToken = "https://accounts.spotify.com/api/token"
 	spotifyAPI   = "https://api.spotify.com/v1"
+	geniusAPI    = "https://api.genius.com"
 )
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
@@ -214,4 +215,69 @@ func discogsTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	proxyDiscogs(w, fmt.Sprintf("%s/%ss/%s?%s", discogsAPI, typ, id, withDiscogsToken(url.Values{}).Encode()))
+}
+
+// ---------- Genius ----------
+
+// The Genius API does not return lyrics text; it returns the URL of the song's
+// page on genius.com. The client opens that page so lyrics stay on Genius (the
+// licensed host). Auth uses the Client Access Token (GENIUS_ACCESS_TOKEN), not
+// the client id/secret: Genius has no client_credentials grant.
+func geniusSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		http.Error(w, "missing query", http.StatusBadRequest)
+		return
+	}
+
+	token := os.Getenv("GENIUS_ACCESS_TOKEN")
+	if token == "" {
+		http.Error(w, "genius access token not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	reqURL := geniusAPI + "/search?" + url.Values{"q": {q}}.Encode()
+	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	var data struct {
+		Response struct {
+			Hits []struct {
+				Result struct {
+					URL       string `json:"url"`
+					Title     string `json:"title"`
+					FullTitle string `json:"full_title"`
+					Thumb     string `json:"song_art_image_thumbnail_url"`
+				} `json:"result"`
+			} `json:"hits"`
+		} `json:"response"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set(contentType, "application/json; charset=UTF-8")
+	if len(data.Response.Hits) == 0 {
+		w.Write([]byte("null"))
+		return
+	}
+	hit := data.Response.Hits[0].Result
+	json.NewEncoder(w).Encode(map[string]string{
+		"url":       hit.URL,
+		"title":     hit.Title,
+		"fullTitle": hit.FullTitle,
+		"thumb":     hit.Thumb,
+	})
 }

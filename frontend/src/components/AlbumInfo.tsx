@@ -3,6 +3,8 @@ import { AlbumData as Album } from '../models/Album'
 import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal } from 'react-bootstrap'
 import DateTimeFormat from '../services/Utils';
 import * as FaIcons from 'react-icons/fa'
+import { SearchLyrics } from '../services/Lyrics';
+import { showToast } from './Toasts';
 
 function numberToLetter(number: number) {
     let result = '';
@@ -52,6 +54,17 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     const editionYear = isNaN(albumInfo.editionYear) || albumInfo.editionYear === 0 ? '' : albumInfo.editionYear;
     const discogsPinned = albumInfo.discogs.len === 1;
     const hasSpotify = albumInfo.spotify.external_urls.spotify !== '';
+
+    // Genius returns the song page URL, not the lyrics text; open it in a new
+    // tab so the lyrics stay on genius.com.
+    const openLyrics = async (trackTitle: string) => {
+        const hit = await SearchLyrics(`${albumInfo.artist} ${trackTitle}`);
+        if (hit?.url) {
+            window.open(hit.url, '_blank');
+        } else {
+            showToast('Letra não encontrada no Genius', 'warning');
+        }
+    };
 
     return (
         <Container fluid className="panel" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto' }}>
@@ -151,13 +164,24 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                     ? albumInfo.discogs.tracks.map((item, idx) => (
                         <ListGroup.Item
                             as="li"
-                            className="d-flex justify-content-between align-items-start"
+                            className="d-flex justify-content-between align-items-center gap-2"
                             key={item.title + item.position + idx.toString()}
                         >
                             <div className="ms-2 me-auto">
                                 <div className="fw-semibold">{item.title}</div>
                             </div>
                             {item.duration && <Badge bg="primary" pill>{item.duration}</Badge>}
+                            {item.title && (
+                                <Button
+                                    size="sm"
+                                    variant="outline-secondary"
+                                    className="d-inline-flex align-items-center gap-1"
+                                    title="Ver letra no Genius"
+                                    onClick={() => openLyrics(item.title)}
+                                >
+                                    <FaIcons.FaMicrophoneAlt /> Letra
+                                </Button>
+                            )}
                         </ListGroup.Item>
                     ))
                     : <ListGroup.Item className="text-muted">Sem faixas cadastradas</ListGroup.Item>}

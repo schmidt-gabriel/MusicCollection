@@ -46,6 +46,9 @@ export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
     if (path.startsWith('/discogs/release')) {
         return {} as T;
     }
+    if (path.startsWith('/genius/search')) {
+        return { url: 'https://genius.com', title: 'Mock', fullTitle: 'Mock Song', thumb: '' } as T;
+    }
     switch (path) {
         case '/artists':
             return ['1349', '2112', 'BLACK SABBATH', 'IRON MAIDEN', 'RUSH'] as T;

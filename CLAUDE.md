@@ -43,13 +43,16 @@ rebuilding a client:
 - Both clients match a claim **by its name, ignoring the namespace** (frontend: `src/app.tsx`; mobile: `AuthService._claimOrEnv` in `lib/src/utils/auth.dart`), so the Action namespace can be any URI (currently `https://music-app.claims/`). Do not reintroduce a hardcoded namespace.
 - `.env` values (`API_DOMAIN`, `DISCOGS_TOKEN` on mobile) are only an optional local fallback; the claim wins.
 
-**Third-party secrets are server-side (web).** The Spotify and Discogs
+**Third-party secrets are server-side (web).** The Spotify, Discogs and Genius
 credentials must not reach the browser. The Go backend holds
-`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN` as env vars and
-exposes authenticated proxies (`/spotify/search`, `/discogs/search`,
-`/discogs/release`, `/discogs/tracks`; see `backend/src/proxy.go`). The web
-client calls only those (`frontend/src/services/Spotify.tsx`, `Discogs.tsx`) and
-no longer stores or receives these secrets. **The mobile app still calls Discogs
+`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DISCOGS_TOKEN`,
+`GENIUS_ACCESS_TOKEN` as env vars and exposes authenticated proxies
+(`/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
+`/genius/search`; see `backend/src/proxy.go`). The web client calls only those
+(`frontend/src/services/Spotify.tsx`, `Discogs.tsx`, `Lyrics.tsx`) and no longer
+stores or receives these secrets. Genius has no client_credentials grant and its
+API returns only the song page URL (never lyrics text), so the lyrics feature
+authenticates with the Client Access Token and opens the genius.com page. **The mobile app still calls Discogs
 directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so the
 Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
@@ -86,8 +89,8 @@ Go + gorilla/mux on port 3000. `jwt.EnsureValidToken()` (Auth0) guards every
 data route; `/health` is open. Data routes include `/artists`, `/album/artist`,
 `/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, the generic
 `/find`, `/findAndSort`, `/aggregation`, plus the third-party proxies
-`/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`
-(all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
+`/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
+`/genius/search` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
 `/update/album` returns a modified count; the frontend uses that shape to tell
 insert from update.
 
@@ -108,3 +111,10 @@ tags. Deploys `scp`/`ssh` to an Oracle VM: the frontend build to
 binary to `/home/ubuntu/music-go-api` (stop, swap, start the `music_api` systemd
 service). Required repo secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
 `ENV_FILE` (the UI production `.env`).
+
+Server runbook (DNS, TLS, nginx, systemd) is in the README "Production server"
+section. Key facts: DNS is on DNS Exit (`publicvm.com` is a DNS Exit zone); two
+domains with different spelling (`disccollection.shop` two `l`,
+`disccolection.publicvm.com` one `l`); TLS via `sudo certbot --nginx -d ...`; the
+API env (incl. the Mongo/Auth0/Discogs/Spotify secrets) lives only in
+`/etc/systemd/system/music_api.service` on the VM, never in the repo.
