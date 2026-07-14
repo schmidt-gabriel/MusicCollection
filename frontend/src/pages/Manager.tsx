@@ -155,7 +155,7 @@ const Home: React.FunctionComponent = () => {
                 </div>
                 <br />
                 <Row className="flex-grow-1" style={{ minHeight: 0 }}>
-                    <Col className="h-100">
+                    <Col className="h-100" style={{ minWidth: 0 }}>
                         {actions.loading
                             ? <Spinner animation="border" />
                             : <Discograpy
@@ -164,7 +164,7 @@ const Home: React.FunctionComponent = () => {
                             />
                         }
                     </Col>
-                    <Col className="h-100">
+                    <Col className="h-100" style={{ minWidth: 0 }}>
                         <AlbumInfo
                             albumInfo={albumInfo as AlbumData}
                             handleShowModalDelete={actions.handleShowModalDelete}
