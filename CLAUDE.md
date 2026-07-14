@@ -95,8 +95,3 @@ tags. Deploys `scp`/`ssh` to an Oracle VM: the frontend build to
 binary to `/home/ubuntu/music-go-api` (stop, swap, start the `music_api` systemd
 service). Required repo secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
 `ENV_FILE` (the UI production `.env`).
-
-## Git
-
-This is a personal project: commit with the personal identity
-(`gabriel.hdos@icloud.com`, GPG key `72456017B2993EA0`) and sign commits (`-S`).
