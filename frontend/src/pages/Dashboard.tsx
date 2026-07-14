@@ -5,6 +5,7 @@ import TotalsData from '../models/Totals';
 import { Col, Row, Container, Table, Spinner, Card } from "react-bootstrap";
 import { Aggregate, FetchAlbumsByYearMetric, FetchAlbums, Find, FindAndSort } from '../services/Albums';
 import ModalAlbum from '../components/ModalAlbums';
+import { useTheme } from '../hooks/useTheme';
 
 import {
     Chart as ChartJS,
@@ -41,6 +42,22 @@ const Dashboard: React.FunctionComponent = () => {
 
     const [modalValue, setModalValue] = useState<Record<string, string>[]>()
     const [modalYear, setModalYear] = useState<number>()
+
+    // Chart.js draws on a canvas, so it can't read our CSS variables. Feed it
+    // theme-aware text/grid colors so the charts stay legible in dark mode.
+    const { isDark } = useTheme();
+    const chartTick = isDark ? '#cbd5e1' : '#334155';
+    const chartGrid = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
+
+    useEffect(() => {
+        ChartJS.defaults.color = chartTick;
+        ChartJS.defaults.borderColor = chartGrid;
+    }, [chartTick, chartGrid]);
+
+    const chartScales = {
+        x: { ticks: { color: chartTick }, grid: { color: chartGrid } },
+        y: { ticks: { color: chartTick }, grid: { color: chartGrid } },
+    };
 
     useEffect(() => {
         if (totals === undefined) {
@@ -196,13 +213,8 @@ const Dashboard: React.FunctionComponent = () => {
                     <hr style={{ width: '90%', marginLeft: '16px'}}></hr>
                     <br />
                     <Row
-                        style={
-                            {
-                                padding: '2rem',
-                                boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                                borderRadius: '1rem',
-                            }
-                        }
+                        className="panel"
+                        style={{ padding: '2rem', margin: 0 }}
                         md="auto"
                     >
                         <Col md="auto">
@@ -220,13 +232,13 @@ const Dashboard: React.FunctionComponent = () => {
                                         <Row>
                                             <Col>
                                                 <svg width="100" height="100">
-                                                    <text x="50" y="55" textAnchor="middle" fontSize="36">{totalValue}</text>
+                                                    <text x="50" y="55" textAnchor="middle" fontSize="36" fill="currentColor">{totalValue}</text>
                                                 </svg>
                                             </Col>
                                             <Col>
                                                 <svg width="100" height="100">
                                                     <circle cx="50" cy="50" r="40" stroke="green" strokeWidth="2" fill="none" />
-                                                    <text x="50" y="55" textAnchor="middle" fontSize="16">100%</text>
+                                                    <text x="50" y="55" textAnchor="middle" fontSize="16" fill="currentColor">100%</text>
                                                 </svg>
                                             </Col>
                                         </Row>
@@ -252,13 +264,13 @@ const Dashboard: React.FunctionComponent = () => {
                                                     <Row>
                                                         <Col>
                                                             <svg width="100" height="100">
-                                                                <text x="50" y="55" textAnchor="middle" fontSize="36">{totals.media[key]}</text>
+                                                                <text x="50" y="55" textAnchor="middle" fontSize="36" fill="currentColor">{totals.media[key]}</text>
                                                             </svg>
                                                         </Col>
                                                         <Col>
                                                             <svg width="100" height="100">
                                                                 <circle cx="50" cy="50" r="40" stroke="green" strokeWidth="2" fill="none" />
-                                                                <text x="50" y="55" textAnchor="middle" fontSize="16">{(totals.media[key] / totalValue * 100).toFixed(2)}%</text>
+                                                                <text x="50" y="55" textAnchor="middle" fontSize="16" fill="currentColor">{(totals.media[key] / totalValue * 100).toFixed(2)}%</text>
                                                             </svg>
                                                         </Col>
                                                     </Row>
@@ -270,17 +282,13 @@ const Dashboard: React.FunctionComponent = () => {
                         }
                     </Row>
                     <br />
-                    <Row>
-                        <Col
-                            style={{
-                                padding: '2rem',
-                                boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                                borderRadius: '1rem',
-                            }}
-                        >
+                    <Row className="g-4">
+                        <Col md={6}>
+                            <div className="panel h-100" style={{ padding: '1.5rem' }}>
                             <h2>Compras por Ano</h2>
                             <Bar data={purchaseByYear} options={{
                                 responsive: true,
+                                scales: chartScales,
                                 plugins: {
                                     legend: {
                                         position: 'top' as const,
@@ -298,20 +306,15 @@ const Dashboard: React.FunctionComponent = () => {
                                     }
                                 }
                             }} />
+                            </div>
                         </Col>
-                        <Col
-                            style={
-                                {
-                                    padding: '2rem',
-                                    boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                                    borderRadius: '1rem',
-                                }
-                            }
-                        >
+                        <Col md={6}>
+                            <div className="panel h-100" style={{ padding: '1.5rem' }}>
                             <h2>Lançamentos por Ano</h2>
                             <Bar data={releaseByYear} options={
                                 {
                                     responsive: true,
+                                    scales: chartScales,
                                     plugins: {
                                         legend: {
                                             position: 'top' as const,
@@ -330,15 +333,13 @@ const Dashboard: React.FunctionComponent = () => {
                                     }
                                 }
                             } />
+                            </div>
                         </Col>
                     </Row>
                     <br />
-                    <Row>
-                        <Col style={{
-                            padding: '2rem',
-                            boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                            borderRadius: '1rem',
-                        }} xs={6}>
+                    <Row className="g-4">
+                        <Col xs={6}>
+                            <div className="panel h-100" style={{ padding: '1.5rem' }}>
                             <h2>Top 20 Albuns por Artista</h2>
                             <Bar data={{
                                 labels: top10ArtistsLabels,
@@ -351,6 +352,7 @@ const Dashboard: React.FunctionComponent = () => {
                                 ],
                             }} options={{
                                 responsive: true,
+                                scales: chartScales,
                                 plugins: {
                                     legend: {
                                         position: 'top' as const,
@@ -377,12 +379,10 @@ const Dashboard: React.FunctionComponent = () => {
                                     }
                                 }
                             }} />
+                            </div>
                         </Col>
-                        <Col style={{
-                            padding: '2rem',
-                            boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                            borderRadius: '1rem',
-                        }} xs={6}>
+                        <Col xs={6}>
+                            <div className="panel h-100" style={{ padding: '1.5rem' }}>
                             <h2>Albuns por Origem</h2>
                             <Table>
                                 <thead>
@@ -402,18 +402,11 @@ const Dashboard: React.FunctionComponent = () => {
                                     }
                                 </tbody>
                             </Table>
+                            </div>
                         </Col>
                     </Row>
                     <br />
-                    <Row
-                        style={
-                            {
-                                padding: '2rem',
-                                boxShadow: '0 4px 8px 0 rgba(0,0,0,0.2)',
-                                borderRadius: '1rem',
-                            }
-                        }
-                    >
+                    <Row className="panel g-4" style={{ padding: '1.5rem', margin: 0 }}>
                         <Col>
                             <h2>Albuns sem Discogs</h2>
                             <Table>

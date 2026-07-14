@@ -69,7 +69,7 @@ const TreeList: React.FunctionComponent = () => {
                                                                         actions.loading || albuns.length === 0 ? <Spinner animation="border" /> :
                                                                             albuns.map((album, index) => {
                                                                                 return (
-                                                                                    <Button key={index} variant="light" style={{ width: '100%', textAlign: 'left' }}
+                                                                                    <Button key={index} variant="link" className="tree-album-btn"
                                                                                         onClick={
                                                                                             () => {
                                                                                                 actions.setAlbumInfo(album)

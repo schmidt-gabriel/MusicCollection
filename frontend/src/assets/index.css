@@ -259,6 +259,43 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Tree page: album entries inside the nested accordion. Theme-aware instead of
+   the stark white btn-light. */
+.tree-album-btn.btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.tree-album-btn.btn:hover,
+.tree-album-btn.btn:focus {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.28);
+  color: var(--text);
+}
+:root[data-theme='dark'] .tree-album-btn.btn:hover,
+:root[data-theme='dark'] .tree-album-btn.btn:focus {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Cover lightbox: dialog hugs the (square) album image, no chrome. */
+.cover-modal {
+  max-width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+.cover-modal .modal-content {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
 .empty-state {
   height: 100%;
   display: flex;

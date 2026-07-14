@@ -167,13 +167,17 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                 ID: <code>{albumInfo.id || '(novo)'}</code>
             </div>
 
-            <Modal show={showCover} onHide={() => setShowCover(false)} centered size="lg">
+            <Modal show={showCover} onHide={() => setShowCover(false)} centered dialogClassName="cover-modal">
                 <Modal.Body
                     className="p-0 d-flex justify-content-center"
                     style={{ cursor: 'zoom-out' }}
                     onClick={() => setShowCover(false)}
                 >
-                    <Image src={albumInfo.discogs.cover_image} alt={albumInfo.title} fluid />
+                    <Image
+                        src={albumInfo.discogs.cover_image}
+                        alt={albumInfo.title}
+                        style={{ maxHeight: '85vh', maxWidth: '90vw', width: 'auto', borderRadius: '12px' }}
+                    />
                 </Modal.Body>
             </Modal>
         </Container>
