@@ -140,14 +140,6 @@ const UserName = styled.div`
     text-overflow: ellipsis;
 `
 
-const UserEmail = styled.div`
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.5);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-`
-
 const UserButton = styled.div`
     display: flex;
     align-items: center;
@@ -229,7 +221,7 @@ type UserToggleProps = {
 
 // Custom Dropdown toggle: the whole user chip opens the menu on click.
 const UserToggle = forwardRef<HTMLDivElement, UserToggleProps>(
-    ({ picture, name, email, onClick }, ref) => (
+    ({ picture, name, onClick }, ref) => (
         <UserButton
             ref={ref}
             onClick={onClick}
@@ -240,7 +232,6 @@ const UserToggle = forwardRef<HTMLDivElement, UserToggleProps>(
             <Avatar src={picture} roundedCircle />
             <UserMeta>
                 <UserName>{name ?? 'Convidado'}</UserName>
-                {email && <UserEmail>{email}</UserEmail>}
             </UserMeta>
         </UserButton>
     )
@@ -348,6 +339,14 @@ const Home: React.FunctionComponent = () => {
                         email={user?.email}
                     />
                     <Dropdown.Menu style={{ width: '100%' }}>
+                        {user?.email && (
+                            <>
+                                <Dropdown.Header style={{ overflowWrap: 'anywhere' }}>
+                                    {user.email}
+                                </Dropdown.Header>
+                                <Dropdown.Divider />
+                            </>
+                        )}
                         <Dropdown.Item
                             onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
                         >

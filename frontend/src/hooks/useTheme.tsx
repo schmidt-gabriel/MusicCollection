@@ -14,7 +14,8 @@ const applyTheme = (theme: Theme) => {
 const getInitialTheme = (): Theme => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Default to light; the user can switch and the choice is persisted.
+    return 'light';
 };
 
 // App-wide light/dark theme, persisted in localStorage and mirrored onto the
