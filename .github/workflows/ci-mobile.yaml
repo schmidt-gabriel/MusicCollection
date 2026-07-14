@@ -1,0 +1,38 @@
+name: CI Mobile
+
+on:
+  pull_request:
+    paths:
+      - 'music_mobile/**'
+      - '.github/workflows/ci-mobile.yaml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: music_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # The real .env is gitignored; the build only needs the asset to exist.
+      - name: Create placeholder .env
+        run: |
+          cat > assets/.env <<'ENV'
+          API_DOMAIN=
+          OAUTH_DOMAIN=
+          OAUTH_CLIENT_ID=
+          OAUTH_AUDIENCE=
+          DISCOGS_TOKEN=
+          ENV
+
+      - run: flutter pub get
+
+      - run: flutter analyze
+
+      - run: flutter test

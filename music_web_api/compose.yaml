@@ -1,0 +1,15 @@
+services:
+  api:
+    image: ghcr.io/schmidt-gabriel/music_web_api:latest
+    container_name: music_web_api
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

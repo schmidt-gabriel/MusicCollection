@@ -1,0 +1,50 @@
+name: musiccollection
+
+# Local stack for the API and the web UI. See README.md for usage.
+#   docker compose up                 -> mongo + api + web (full stack)
+#   REACT_APP_MOCK=1 docker compose up web  -> UI only, fixture data, no auth
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build:
+      context: ./music_web_api
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-music}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-}
+
+  web:
+    image: node:20
+    working_dir: /app
+    # npm install runs against the named volume, so host node_modules (macOS
+    # binaries) never leak into the Linux container.
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      REACT_APP_API_DOMAIN: ${REACT_APP_API_DOMAIN:-localhost:3000}
+      REACT_APP_AUTH0_DOMAIN: ${REACT_APP_AUTH0_DOMAIN:-}
+      REACT_APP_AUTH0_CLIENT_ID: ${REACT_APP_AUTH0_CLIENT_ID:-}
+      REACT_APP_AUDIENCE: ${REACT_APP_AUDIENCE:-}
+      REACT_APP_MOCK: ${REACT_APP_MOCK:-}
+    volumes:
+      - ./music_web_app:/app
+      - web-node-modules:/app/node_modules
+
+volumes:
+  mongo-data:
+  web-node-modules:

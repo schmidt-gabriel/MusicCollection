@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local environment files and secrets
+# (each subproject also has its own .gitignore for node_modules, build, etc.)
+.env
+.env.*
+!.env.example
+
+# Root-level build artifacts (e.g. the binary produced by docker compose builds)
+/music-go-api
+/dist/

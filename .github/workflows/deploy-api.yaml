@@ -1,0 +1,66 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'music_web_api/**'
+      - '.github/workflows/deploy-api.yaml'
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: music_web_api/src/go.mod
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Detect server architecture
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          UNAME=$(ssh -i ~/.ssh/id_deploy "$USER@$HOST" uname -m)
+          case "$UNAME" in
+            aarch64|arm64) echo "GOARCH=arm64" >> "$GITHUB_ENV" ;;
+            x86_64|amd64)  echo "GOARCH=amd64" >> "$GITHUB_ENV" ;;
+            *) echo "Unsupported server architecture: $UNAME" >&2; exit 1 ;;
+          esac
+
+      - name: Build binary
+        working-directory: music_web_api/src
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+        run: go build -trimpath -ldflags="-s -w" -o "$GITHUB_WORKSPACE/music-go-api" .
+
+      - name: Deploy to the VM
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        # Copy to a temp name, then stop the service, swap the binary and
+        # start it again (a running executable cannot be overwritten in place).
+        run: |
+          scp -i ~/.ssh/id_deploy "$GITHUB_WORKSPACE/music-go-api" "$USER@$HOST:/home/ubuntu/music-go-api.new"
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" '
+            sudo systemctl stop music_api &&
+            mv /home/ubuntu/music-go-api.new /home/ubuntu/music-go-api &&
+            chmod +x /home/ubuntu/music-go-api &&
+            sudo systemctl start music_api
+          '

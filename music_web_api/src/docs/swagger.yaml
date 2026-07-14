@@ -1,0 +1,379 @@
+host: api.schmidtdev.cloud
+info:
+  contact: {}
+  description: This is a sample server Music API server.
+  title: Music API
+  version: "1"
+paths:
+  /album/artist:
+    post:
+      consumes:
+      - application/json
+      description: Get albuns by artist
+      parameters:
+      - description: Artist
+        in: body
+        name: artist
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get albuns by artist
+      tags:
+      - Album
+  /album/id:
+    post:
+      consumes:
+      - application/json
+      description: Get albuns by ID
+      parameters:
+      - description: ID
+        in: body
+        name: id
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get albuns by ID
+      tags:
+      - Album
+  /album/year:
+    post:
+      consumes:
+      - application/json
+      description: Get albuns by year
+      parameters:
+      - description: Year
+        in: body
+        name: year
+        required: true
+        schema:
+          type: integer
+      - description: Metric
+        in: body
+        name: metric
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get albuns by year
+      tags:
+      - Album
+  /albuns:
+    post:
+      consumes:
+      - application/json
+      description: Get albuns
+      parameters:
+      - description: Artist
+        in: body
+        name: artist
+        required: true
+        schema:
+          type: string
+      - description: Media
+        in: body
+        name: media
+        required: true
+        schema:
+          type: string
+      - description: Origin
+        in: body
+        name: origin
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get albuns
+      tags:
+      - Album
+  /all:
+    get:
+      consumes:
+      - application/json
+      description: Get all
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get all
+      tags:
+      - Album
+  /artists:
+    get:
+      consumes:
+      - application/json
+      description: Get artists
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get artists
+      tags:
+      - Artist
+  /delete/album:
+    post:
+      consumes:
+      - application/json
+      description: Delete album
+      parameters:
+      - description: ID
+        in: body
+        name: id
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete album
+      tags:
+      - Album
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Health check
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - Health
+  /logs:
+    post:
+      consumes:
+      - application/json
+      description: Insert logs
+      parameters:
+      - description: Log
+        in: body
+        name: log
+        required: true
+        schema:
+          type: string
+      - description: Type
+        in: body
+        name: type
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Insert logs
+      tags:
+      - Logs
+  /medias:
+    get:
+      consumes:
+      - application/json
+      description: Get medias
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get medias
+      tags:
+      - Aggegation
+  /new/album:
+    post:
+      consumes:
+      - application/json
+      description: Insert album
+      parameters:
+      - description: Album
+        in: body
+        name: album
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Insert album
+      tags:
+      - Album
+  /query:
+    post:
+      consumes:
+      - application/json
+      description: Query album
+      parameters:
+      - description: Album
+        in: body
+        name: album
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Query album
+      tags:
+      - Album
+  /title:
+    post:
+      consumes:
+      - application/json
+      description: Get albuns by title
+      parameters:
+      - description: Title
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get albuns by title
+      tags:
+      - Album
+  /totals:
+    get:
+      consumes:
+      - application/json
+      description: Get totals
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get totals
+      tags:
+      - Aggegation
+  /update/album:
+    post:
+      consumes:
+      - application/json
+      description: Update album
+      parameters:
+      - description: Album
+        in: body
+        name: album
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update album
+      tags:
+      - Album
+  /user:
+    get:
+      consumes:
+      - application/json
+      description: Get user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get user
+      tags:
+      - User
+schemes:
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,48 @@
+name: Deploy UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'music_web_app/**'
+      - '.github/workflows/deploy-ui.yaml'
+
+concurrency:
+  group: deploy-ui
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: music_web_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: music_web_app/package-lock.json
+
+      - run: npm ci
+
+      - name: Create .env
+        run: printf '%s\n' "${{ secrets.ENV_FILE }}" > .env
+
+      - run: npm run build
+
+      - name: Deploy to the VM
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        # scp instead of rsync: the VM does not have rsync installed.
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" "rm -rf /var/www/music-app/* && mkdir -p /var/www/music-app"
+          scp -i ~/.ssh/id_deploy -r build/* "$USER@$HOST:/var/www/music-app/"

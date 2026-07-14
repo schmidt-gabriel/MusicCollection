@@ -1,0 +1,149 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.basic.tree {
+  list-style: none;
+  margin: 0;
+  padding: 20px;
+}
+.basic .tree-node,
+.basic .tree-node-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.basic .tree-branch-wrapper,
+.basic .tree-node__leaf {
+  outline: none;
+}
+
+.basic .tree-node--focused {
+  outline-color: rgb(77, 144, 254);
+  outline-style: auto;
+  outline-width: 2px;
+  display: block;
+}
+
+.basic .tree-node__branch {
+  display: block;
+}
+
+.basic .tree-node {
+  cursor: pointer;
+}
+/* ===== Design tokens (violet identity, same family as the mobile app) ===== */
+:root {
+  --brand: #6366f1;
+  --brand-2: #8b5cf6;
+  --brand-dark: #4f46e5;
+  --bg: #f4f5fb;
+  --surface: #ffffff;
+  --text: #1f2430;
+  --muted: #6b7280;
+  --radius: 16px;
+  --shadow: 0 6px 24px rgba(49, 46, 129, 0.08);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1.25rem 1.75rem 0.75rem;
+}
+.page-header h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.page-header small {
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+}
+
+.album-card {
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.album-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(49, 46, 129, 0.16);
+}
+
+.btn-brand {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+.btn-brand:hover, .btn-brand:focus {
+  filter: brightness(1.06);
+  color: #fff;
+}
+
+/* Align bootstrap's accent color with the brand */
+.btn-primary { background: var(--brand); border-color: var(--brand); }
+.btn-primary:hover, .btn-primary:focus { background: var(--brand-dark); border-color: var(--brand-dark); }
+.badge.bg-primary { background-color: var(--brand) !important; }
+.form-control:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
+}
+.accordion-button:not(.collapsed) {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--brand-dark);
+}
+
+/* Graphite button, matches the sidebar gradient */
+.btn-graphite {
+  background: linear-gradient(180deg, #3a4150 0%, #23272f 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+.btn-graphite:hover, .btn-graphite:focus {
+  filter: brightness(1.15);
+  color: #fff;
+}
+
+/* Pill search input, same look as the artist autocomplete */
+.pill-search {
+  height: 50px;
+  border-radius: 1rem;
+  border: 1px solid #dfe1e5;
+  box-shadow: rgba(32, 33, 36, 0.28) 0px 1px 6px 0px;
+  padding-left: 42px;
+  font-size: 16px;
+  color: #212121;
+}
+.pill-search::placeholder {
+  color: grey;
+}
+.pill-search:focus {
+  box-shadow: rgba(32, 33, 36, 0.28) 0px 1px 6px 0px;
+  border-color: #dfe1e5;
+}
