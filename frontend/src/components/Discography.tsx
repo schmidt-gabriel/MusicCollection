@@ -1,4 +1,4 @@
-import { Container, Row, Col, Card } from 'react-bootstrap'
+import { Container, ListGroup } from 'react-bootstrap'
 import {AlbumData} from '../models/Album'
 
 const ModalDelete = ({ albuns, setAlbumInfo }: {
@@ -24,30 +24,30 @@ const ModalDelete = ({ albuns, setAlbumInfo }: {
                 overflowY: 'auto',
             }
         }>
-            <Row>
+            <ListGroup variant="flush">
                 {albuns.map((item, _) => (
-                    <Col key={item.id} style={{ padding: '1rem' }}>
-                        <Card className="album-card" style={
-                            {
-                                width: '20rem',
-                                borderRadius: '1rem',
+                    <ListGroup.Item
+                        key={item.id}
+                        action
+                        className="album-list-item d-flex align-items-center gap-3"
+                        style={{ borderRadius: '0.75rem', cursor: 'pointer' }}
+                        onClick={
+                            () => {
+                                setAlbumInfo(item)
                             }
-                        }
-                            key={item.id}
-                            onClick={
-                                () => {
-                                    setAlbumInfo(item)
-                                }
-                            }>
-                            <Card.Img variant="top" src={item.discogs.cover_image} style={{ width: '18rem', height: '18rem', paddingLeft: '1rem', paddingTop: '1rem' }} />
-                            <Card.Body>
-                                <Card.Title>{item.title}</Card.Title>
-                                <Card.Subtitle className="mb-2 text-muted">{item.artist}</Card.Subtitle>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                        }>
+                        <img
+                            src={item.discogs.cover_image}
+                            alt={item.title}
+                            style={{ width: '3.5rem', height: '3.5rem', objectFit: 'cover', borderRadius: '0.5rem', flexShrink: 0 }}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                            <div className="fw-semibold text-truncate">{item.title}</div>
+                            <div className="text-muted text-truncate">{item.artist}</div>
+                        </div>
+                    </ListGroup.Item>
                 ))}
-            </Row>
+            </ListGroup>
         </Container>
     );
 }
