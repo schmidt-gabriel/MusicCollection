@@ -215,7 +215,6 @@ const ThemeToggle = () => {
 type UserToggleProps = {
     picture?: string;
     name?: string;
-    email?: string;
     onClick?: (e: React.MouseEvent) => void;
 };
 
@@ -241,6 +240,16 @@ const Home: React.FunctionComponent = () => {
     const [exportLoadingCSV, setExportLoadingCSV] = useState(false);
     const [exportLoadingJSON, setExportLoadingJSON] = useState(false);
     const { user, logout } = useAuth0();
+
+    // Auth0 often sets `name` to the email for email-only accounts; prefer a
+    // real name and otherwise fall back to the email's local part so the chip
+    // never shows the full address (the email itself lives in the dropdown).
+    const displayName =
+        (user?.name && user.name !== user.email && user.name)
+        || user?.nickname
+        || user?.given_name
+        || (user?.email ? user.email.split('@')[0] : undefined)
+        || 'Convidado';
 
     const exportCSV = () => {
         if (exportLoadingCSV) return;
@@ -335,13 +344,12 @@ const Home: React.FunctionComponent = () => {
                     <Dropdown.Toggle
                         as={UserToggle}
                         picture={user?.picture}
-                        name={user?.name}
-                        email={user?.email}
+                        name={displayName}
                     />
-                    <Dropdown.Menu style={{ width: '100%' }}>
+                    <Dropdown.Menu style={{ minWidth: '200px', maxWidth: '220px' }}>
                         {user?.email && (
                             <>
-                                <Dropdown.Header style={{ overflowWrap: 'anywhere' }}>
+                                <Dropdown.Header style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
                                     {user.email}
                                 </Dropdown.Header>
                                 <Dropdown.Divider />
