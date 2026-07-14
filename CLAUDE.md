@@ -51,8 +51,10 @@ credentials must not reach the browser. The Go backend holds
 `/genius/search`; see `backend/src/proxy.go`). The web client calls only those
 (`frontend/src/services/Spotify.tsx`, `Discogs.tsx`, `Lyrics.tsx`) and no longer
 stores or receives these secrets. Genius has no client_credentials grant and its
-API returns only the song page URL (never lyrics text), so the lyrics feature
-authenticates with the Client Access Token and opens the genius.com page. **The mobile app still calls Discogs
+API returns only the song page URL (never lyrics text), so it is the fallback
+"open on Genius" link. Actual lyrics text comes from the `/lyrics` proxy, which
+hits LRCLIB (keyless, community-sourced, returns plain + synced/LRC); the `Letra`
+button per track shows it in a modal (`frontend/src/services/Lyrics.tsx`). **The mobile app still calls Discogs
 directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so the
 Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
@@ -90,7 +92,7 @@ data route; `/health` is open. Data routes include `/artists`, `/album/artist`,
 `/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, the generic
 `/find`, `/findAndSort`, `/aggregation`, plus the third-party proxies
 `/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
-`/genius/search` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
+`/genius/search`, `/lyrics` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
 `/update/album` returns a modified count; the frontend uses that shape to tell
 insert from update.
 

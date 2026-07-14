@@ -25,6 +25,7 @@ const (
 	spotifyToken = "https://accounts.spotify.com/api/token"
 	spotifyAPI   = "https://api.spotify.com/v1"
 	geniusAPI    = "https://api.genius.com"
+	lrclibAPI    = "https://lrclib.net"
 )
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
@@ -280,4 +281,65 @@ func geniusSearch(w http.ResponseWriter, r *http.Request) {
 		"fullTitle": hit.FullTitle,
 		"thumb":     hit.Thumb,
 	})
+}
+
+// ---------- LRCLIB (lyrics text) ----------
+
+// lyricsSearch fetches lyrics from LRCLIB (keyless, community-sourced). It
+// returns plain and/or synced (LRC) lyrics for the best match, or null. Proxied
+// through the backend for consistency and to avoid browser CORS.
+func lyricsSearch(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Query().Get("title")
+	if title == "" {
+		http.Error(w, "missing title", http.StatusBadRequest)
+		return
+	}
+
+	params := url.Values{"track_name": {title}}
+	if v := r.URL.Query().Get("artist"); v != "" {
+		params.Set("artist_name", v)
+	}
+	if v := r.URL.Query().Get("album"); v != "" {
+		params.Set("album_name", v)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, lrclibAPI+"/api/search?"+params.Encode(), nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// LRCLIB asks clients to identify themselves.
+	req.Header.Set("User-Agent", "MusicCollection/1.0 (https://github.com/gabriel/music-collection)")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	var results []struct {
+		TrackName    string `json:"trackName"`
+		ArtistName   string `json:"artistName"`
+		PlainLyrics  string `json:"plainLyrics"`
+		SyncedLyrics string `json:"syncedLyrics"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set(contentType, "application/json; charset=UTF-8")
+	for _, res := range results {
+		if res.PlainLyrics != "" || res.SyncedLyrics != "" {
+			json.NewEncoder(w).Encode(map[string]string{
+				"trackName":    res.TrackName,
+				"artistName":   res.ArtistName,
+				"plainLyrics":  res.PlainLyrics,
+				"syncedLyrics": res.SyncedLyrics,
+			})
+			return
+		}
+	}
+	w.Write([]byte("null"))
 }

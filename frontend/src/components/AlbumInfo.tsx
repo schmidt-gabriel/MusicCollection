@@ -1,9 +1,9 @@
 import { ReactNode, useState } from 'react'
 import { AlbumData as Album } from '../models/Album'
-import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal } from 'react-bootstrap'
+import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal, Spinner } from 'react-bootstrap'
 import DateTimeFormat from '../services/Utils';
 import * as FaIcons from 'react-icons/fa'
-import { SearchLyrics } from '../services/Lyrics';
+import { SearchLyrics, FetchLyrics, stripSyncedTimestamps } from '../services/Lyrics';
 import { showToast } from './Toasts';
 
 function numberToLetter(number: number) {
@@ -36,6 +36,11 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     handleShowModalFixDiscogs: () => void
 }) => {
     const [showCover, setShowCover] = useState(false);
+    const [lyricsOpen, setLyricsOpen] = useState(false);
+    const [lyricsLoading, setLyricsLoading] = useState(false);
+    const [lyricsTitle, setLyricsTitle] = useState('');
+    const [lyricsTrack, setLyricsTrack] = useState('');
+    const [lyricsText, setLyricsText] = useState('');
 
     if (albumInfo === undefined || albumInfo.title === '') {
         return (
@@ -55,14 +60,29 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     const discogsPinned = albumInfo.discogs.len === 1;
     const hasSpotify = albumInfo.spotify.external_urls.spotify !== '';
 
-    // Genius returns the song page URL, not the lyrics text; open it in a new
-    // tab so the lyrics stay on genius.com.
+    // Fetch the lyrics text from LRCLIB and show it in a modal. If nothing is
+    // found, the modal offers a Genius link (Genius returns only the page URL).
     const openLyrics = async (trackTitle: string) => {
+        setLyricsTrack(trackTitle);
+        setLyricsTitle(`${albumInfo.artist} - ${trackTitle}`);
+        setLyricsText('');
+        setLyricsLoading(true);
+        setLyricsOpen(true);
+        const res = await FetchLyrics(albumInfo.artist, trackTitle, albumInfo.title);
+        setLyricsLoading(false);
+        if (res && (res.plainLyrics || res.syncedLyrics)) {
+            setLyricsText(res.plainLyrics || stripSyncedTimestamps(res.syncedLyrics));
+        } else {
+            setLyricsText('');
+        }
+    };
+
+    const openGeniusFor = async (trackTitle: string) => {
         const hit = await SearchLyrics(`${albumInfo.artist} ${trackTitle}`);
         if (hit?.url) {
             window.open(hit.url, '_blank');
         } else {
-            showToast('Letra não encontrada no Genius', 'warning');
+            showToast('Também não encontrei no Genius', 'warning');
         }
     };
 
@@ -176,7 +196,7 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                                     size="sm"
                                     variant="outline-secondary"
                                     className="d-inline-flex align-items-center gap-1"
-                                    title="Ver letra no Genius"
+                                    title="Ver a letra"
                                     onClick={() => openLyrics(item.title)}
                                 >
                                     <FaIcons.FaMicrophoneAlt /> Letra
@@ -203,6 +223,33 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                         style={{ maxHeight: '85vh', maxWidth: '90vw', width: 'auto', borderRadius: '12px' }}
                     />
                 </Modal.Body>
+            </Modal>
+
+            <Modal show={lyricsOpen} onHide={() => setLyricsOpen(false)} centered scrollable>
+                <Modal.Header closeButton>
+                    <Modal.Title className="d-flex align-items-center gap-2" style={{ fontSize: '1.1rem' }}>
+                        <FaIcons.FaMicrophoneAlt /> {lyricsTitle}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+                    {lyricsLoading
+                        ? <div className="text-center py-4"><Spinner animation="border" /></div>
+                        : lyricsText
+                            ? <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{lyricsText}</pre>
+                            : (
+                                <div className="text-center py-4">
+                                    <p className="text-muted">Letra não encontrada no LRCLIB.</p>
+                                    <Button variant="outline-secondary" onClick={() => openGeniusFor(lyricsTrack)}>
+                                        Procurar no Genius
+                                    </Button>
+                                </div>
+                            )}
+                </Modal.Body>
+                {lyricsText && (
+                    <Modal.Footer className="text-muted small justify-content-start">
+                        Letra via LRCLIB
+                    </Modal.Footer>
+                )}
             </Modal>
         </Container>
     );
