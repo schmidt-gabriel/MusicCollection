@@ -118,7 +118,7 @@ func GetCachedLyrics(key string) (cached bool, plain string, synced string, inst
 // instrumental=true to record a track with no lyrics (from the LRCLIB flag or a
 // manual mark).
 func SaveLyrics(key, artist, title, album, plain, synced string, instrumental bool) {
-	_, _ = lyricsColl.UpdateOne(context.TODO(),
+	_, err := lyricsColl.UpdateOne(context.TODO(),
 		bson.M{"_id": key},
 		bson.M{"$set": bson.M{
 			"ARTIST":       artist,
@@ -132,6 +132,14 @@ func SaveLyrics(key, artist, title, album, plain, synced string, instrumental bo
 		}},
 		options.Update().SetUpsert(true),
 	)
+	if err != nil {
+		log.Printf("SaveLyrics: write failed for %q into %s.%s: %v", key, lyricsColl.Database().Name(), lyricsColl.Name(), err)
+	}
+}
+
+// CountLyrics returns how many docs are in the LYRICS cache collection.
+func CountLyrics() (int64, error) {
+	return lyricsColl.CountDocuments(context.TODO(), bson.M{})
 }
 
 // CountAlbumsWithTracks reports how many albums have a non-empty DISCOGS.tracks

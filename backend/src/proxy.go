@@ -402,6 +402,9 @@ func runLyricsSweep(limit int) (done bool) {
 		ensureLyricsCached(artist, track, album)
 		time.Sleep(500 * time.Millisecond)
 	}
+	if total, err := db.CountLyrics(); err == nil {
+		log.Printf("lyrics sweep: batch done, LYRICS now has %d doc(s)", total)
+	}
 	return false
 }
 
