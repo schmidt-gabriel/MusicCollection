@@ -121,7 +121,7 @@ runbook, not something the app reads.
 ### DNS
 
 DNS for the domains is managed at **DNS Exit** (dnsexit.com). `publicvm.com` is a
-DNS Exit free dynamic‑DNS zone, so `disccolection.publicvm.com` and its
+DNS Exit free dynamic‑DNS zone, so `hostname` and its
 subdomains are records there. Point each host (root, `app.`, `api.`) at the VM's
 public IP.
 
@@ -130,7 +130,7 @@ Two domains are in use, and they are spelled differently, watch the double `l`:
 | Domain | Notes |
 | --- | --- |
 | `disccollection.shop` (`www.`, `app.`, `api.`) | primary, two `l` |
-| `disccolection.publicvm.com` (`app.`, `api.`) | DNS Exit, one `l` |
+| `hostname` (`app.`, `api.`) | DNS Exit, one `l` |
 
 ### TLS certificates (Certbot)
 
@@ -138,7 +138,7 @@ Certificates are issued with Certbot's nginx plugin. To issue or renew the
 publicvm.com bundle:
 
 ```bash
-sudo certbot --nginx -d disccolection.publicvm.com -d app.disccolection.publicvm.com -d api.disccolection.publicvm.com
+sudo certbot --nginx -d hostname -d app.hostname -d api.hostname
 ```
 
 Certbot writes the certs under `/etc/letsencrypt/live/<domain>/` and edits the

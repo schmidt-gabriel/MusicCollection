@@ -69,7 +69,7 @@ This is a music application built using Flutter. It allows users to manage their
       instead of the bundled `.env`. To change them later you just edit the
       Action Secrets in Auth0, no rebuild. In **Actions → Library → Build
       Custom → Login** (or your existing post-login Action), add Action
-      **Secrets** named `API_DOMAIN` (e.g. `api.disccolection.publicvm.com`)
+      **Secrets** named `API_DOMAIN` (e.g. `api.hostname`)
       and `DISCOGS_TOKEN`, then set the claims:
 
       ```js

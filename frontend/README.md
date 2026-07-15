@@ -59,7 +59,7 @@ call. There is no machine-to-machine flow in the browser anymore.
 REACT_APP_AUTH0_DOMAIN=<tenant>.us.auth0.com
 REACT_APP_AUTH0_CLIENT_ID=<SPA application client id>
 REACT_APP_AUDIENCE=music-collection-api   # https:// prefix is added in code
-REACT_APP_API_DOMAIN=api.disccolection.publicvm.com
+REACT_APP_API_DOMAIN=api.hostname
 ```
 
 ## Auth0 dashboard requirements
