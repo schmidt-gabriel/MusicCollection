@@ -284,6 +284,33 @@ body {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
+/* Karaoke (synced lyrics): dim lines, highlight the current one. */
+.karaoke {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+.karaoke-line {
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.karaoke-line:hover {
+  color: var(--text);
+}
+.karaoke-line.active {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  background: rgba(99, 102, 241, 0.12);
+}
+:root[data-theme='dark'] .karaoke-line.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Cover lightbox: dialog hugs the (square) album image, no chrome. */
 .cover-modal {
   max-width: fit-content;

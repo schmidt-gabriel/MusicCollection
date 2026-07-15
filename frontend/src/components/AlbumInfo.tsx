@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react'
 import { AlbumData as Album } from '../models/Album'
-import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal, Spinner } from 'react-bootstrap'
+import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal } from 'react-bootstrap'
 import DateTimeFormat from '../services/Utils';
 import * as FaIcons from 'react-icons/fa'
-import { FetchLyrics, stripSyncedTimestamps } from '../services/Lyrics';
+import { FetchLyrics } from '../services/Lyrics';
+import LyricsModal from './LyricsModal';
 
 function numberToLetter(number: number) {
     let result = '';
@@ -38,7 +39,8 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     const [lyricsOpen, setLyricsOpen] = useState(false);
     const [lyricsLoading, setLyricsLoading] = useState(false);
     const [lyricsTitle, setLyricsTitle] = useState('');
-    const [lyricsText, setLyricsText] = useState('');
+    const [lyricsPlain, setLyricsPlain] = useState('');
+    const [lyricsSynced, setLyricsSynced] = useState('');
 
     if (albumInfo === undefined || albumInfo.title === '') {
         return (
@@ -58,19 +60,18 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     const discogsPinned = albumInfo.discogs.len === 1;
     const hasSpotify = albumInfo.spotify.external_urls.spotify !== '';
 
-    // Fetch the lyrics text from LRCLIB and show it in a modal.
+    // Fetch the lyrics from LRCLIB and show them in the modal (karaoke when the
+    // track has synced/LRC lyrics, plain text otherwise).
     const openLyrics = async (trackTitle: string) => {
         setLyricsTitle(`${albumInfo.artist} - ${trackTitle}`);
-        setLyricsText('');
+        setLyricsPlain('');
+        setLyricsSynced('');
         setLyricsLoading(true);
         setLyricsOpen(true);
         const res = await FetchLyrics(albumInfo.artist, trackTitle, albumInfo.title);
         setLyricsLoading(false);
-        if (res && (res.plainLyrics || res.syncedLyrics)) {
-            setLyricsText(res.plainLyrics || stripSyncedTimestamps(res.syncedLyrics));
-        } else {
-            setLyricsText('');
-        }
+        setLyricsPlain(res?.plainLyrics ?? '');
+        setLyricsSynced(res?.syncedLyrics ?? '');
     };
 
     return (
@@ -212,25 +213,14 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                 </Modal.Body>
             </Modal>
 
-            <Modal show={lyricsOpen} onHide={() => setLyricsOpen(false)} centered scrollable>
-                <Modal.Header closeButton>
-                    <Modal.Title className="d-flex align-items-center gap-2" style={{ fontSize: '1.1rem' }}>
-                        <FaIcons.FaMicrophoneAlt /> {lyricsTitle}
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-                    {lyricsLoading
-                        ? <div className="text-center py-4"><Spinner animation="border" /></div>
-                        : lyricsText
-                            ? <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{lyricsText}</pre>
-                            : <div className="text-center py-4 text-muted">Letra não encontrada</div>}
-                </Modal.Body>
-                {lyricsText && (
-                    <Modal.Footer className="text-muted small justify-content-start">
-                        Letra via LRCLIB
-                    </Modal.Footer>
-                )}
-            </Modal>
+            <LyricsModal
+                show={lyricsOpen}
+                onHide={() => setLyricsOpen(false)}
+                title={lyricsTitle}
+                loading={lyricsLoading}
+                plainLyrics={lyricsPlain}
+                syncedLyrics={lyricsSynced}
+            />
         </Container>
     );
 }

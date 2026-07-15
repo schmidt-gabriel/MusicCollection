@@ -47,7 +47,7 @@ export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
         return {} as T;
     }
     if (path.startsWith('/lyrics')) {
-        return { trackName: 'Mock', artistName: 'Mock', plainLyrics: '[Letra de exemplo do mock]\nLinha um\nLinha dois\nLinha três', syncedLyrics: '' } as T;
+        return { trackName: 'Mock', artistName: 'Mock', plainLyrics: 'Linha um\nLinha dois\nLinha tres', syncedLyrics: '' } as T;
     }
     switch (path) {
         case '/artists':
