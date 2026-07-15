@@ -50,9 +50,11 @@ exposes authenticated proxies (`/spotify/search`, `/discogs/search`,
 `/discogs/release`, `/discogs/tracks`; see `backend/src/proxy.go`). The web
 client calls only those (`frontend/src/services/Spotify.tsx`, `Discogs.tsx`) and
 no longer stores or receives these secrets. Lyrics text comes from the `/lyrics`
-proxy, which hits LRCLIB (keyless, community-sourced, returns plain + synced/LRC);
-the `Letra` button per track shows it in a modal (`frontend/src/services/Lyrics.tsx`),
-or "Letra não encontrada" when LRCLIB has nothing. **The mobile app still calls
+proxy: it checks the Mongo `LYRICS` collection first (cache, keyed by normalized
+`ARTIST|TITLE|ALBUM`) and only calls LRCLIB (keyless, community-sourced, plain +
+synced/LRC) on a miss, then saves the result back. The `Letra` button per track
+shows it in a karaoke modal (`frontend/src/components/LyricsModal.tsx`), or
+"Letra não encontrada" when neither Mongo nor LRCLIB has it. **The mobile app still calls
 Discogs directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so
 the Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
@@ -71,8 +73,9 @@ callback path segment differs: iOS `ios/com.gabriel.musicapp`, Android
 
 ## Data model conventions (subtle, has caused bugs)
 
-MongoDB, database from `MONGODB_DATABASE`, collection is hardcoded `"CD"`
-(`backend/src/database/mongo.go`). BSON field names are UPPERCASE
+MongoDB, database from `MONGODB_DATABASE`, main collection is hardcoded `"CD"`
+(`backend/src/database/mongo.go`); a second `"LYRICS"` collection caches fetched
+lyrics (`_id` = normalized `ARTIST|TITLE|ALBUM`). BSON field names are UPPERCASE
 (`ARTIST`, `TITLE`, `RELEASE_YEAR`, ...); the JSON API is camelCase.
 
 - The whole collection stores `ARTIST`/`TITLE`/`MEDIA`/`ORIGIN` **uppercase**, and every read query uppercases its search term. Writes go through `normalizeAlbum` (`main.go`) which uppercases those fields. Any new write path must do the same or the record will not be found by the listings.
@@ -115,6 +118,6 @@ service). Required repo secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
 Server runbook (DNS, TLS, nginx, systemd) is in the README "Production server"
 section. Key facts: DNS is on DNS Exit (`publicvm.com` is a DNS Exit zone); two
 domains with different spelling (`disccollection.shop` two `l`,
-`disccolection.publicvm.com` one `l`); TLS via `sudo certbot --nginx -d ...`; the
+`hostname` one `l`); TLS via `sudo certbot --nginx -d ...`; the
 API env (incl. the Mongo/Auth0/Discogs/Spotify secrets) lives only in
 `/etc/systemd/system/music_api.service` on the VM, never in the repo.

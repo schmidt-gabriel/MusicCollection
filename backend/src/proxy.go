@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	db "music-go-api/database"
 )
 
 // These handlers keep the Spotify and Discogs credentials on the server. The
@@ -218,24 +220,52 @@ func discogsTracks(w http.ResponseWriter, r *http.Request) {
 	proxyDiscogs(w, fmt.Sprintf("%s/%ss/%s?%s", discogsAPI, typ, id, withDiscogsToken(url.Values{}).Encode()))
 }
 
-// ---------- LRCLIB (lyrics text) ----------
+// ---------- Lyrics (Mongo cache + LRCLIB) ----------
 
-// lyricsSearch fetches lyrics from LRCLIB (keyless, community-sourced). It
-// returns plain and/or synced (LRC) lyrics for the best match, or null. Proxied
-// through the backend for consistency and to avoid browser CORS.
+// lyricsKey normalizes artist/title/album into a stable cache key.
+func lyricsKey(artist, title, album string) string {
+	norm := func(s string) string { return strings.ToUpper(strings.TrimSpace(s)) }
+	return norm(artist) + "|" + norm(title) + "|" + norm(album)
+}
+
+func writeLyrics(w http.ResponseWriter, plain, synced string) {
+	w.Header().Set(contentType, "application/json; charset=UTF-8")
+	if plain == "" && synced == "" {
+		w.Write([]byte("null"))
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{
+		"plainLyrics":  plain,
+		"syncedLyrics": synced,
+	})
+}
+
+// lyricsSearch returns lyrics for a track. It first checks the Mongo LYRICS
+// cache; on a miss it queries LRCLIB (keyless, community-sourced) and, when a
+// match is found, stores it so the next lookup is served from Mongo.
 func lyricsSearch(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Query().Get("title")
 	if title == "" {
 		http.Error(w, "missing title", http.StatusBadRequest)
 		return
 	}
+	artist := r.URL.Query().Get("artist")
+	album := r.URL.Query().Get("album")
+	key := lyricsKey(artist, title, album)
 
-	params := url.Values{"track_name": {title}}
-	if v := r.URL.Query().Get("artist"); v != "" {
-		params.Set("artist_name", v)
+	// 1. Mongo cache.
+	if found, plain, synced := db.GetCachedLyrics(key); found {
+		writeLyrics(w, plain, synced)
+		return
 	}
-	if v := r.URL.Query().Get("album"); v != "" {
-		params.Set("album_name", v)
+
+	// 2. LRCLIB API.
+	params := url.Values{"track_name": {title}}
+	if artist != "" {
+		params.Set("artist_name", artist)
+	}
+	if album != "" {
+		params.Set("album_name", album)
 	}
 
 	req, err := http.NewRequest(http.MethodGet, lrclibAPI+"/api/search?"+params.Encode(), nil)
@@ -254,8 +284,6 @@ func lyricsSearch(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	var results []struct {
-		TrackName    string `json:"trackName"`
-		ArtistName   string `json:"artistName"`
 		PlainLyrics  string `json:"plainLyrics"`
 		SyncedLyrics string `json:"syncedLyrics"`
 	}
@@ -264,17 +292,12 @@ func lyricsSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(contentType, "application/json; charset=UTF-8")
 	for _, res := range results {
 		if res.PlainLyrics != "" || res.SyncedLyrics != "" {
-			json.NewEncoder(w).Encode(map[string]string{
-				"trackName":    res.TrackName,
-				"artistName":   res.ArtistName,
-				"plainLyrics":  res.PlainLyrics,
-				"syncedLyrics": res.SyncedLyrics,
-			})
+			db.SaveLyrics(key, artist, title, album, res.PlainLyrics, res.SyncedLyrics)
+			writeLyrics(w, res.PlainLyrics, res.SyncedLyrics)
 			return
 		}
 	}
-	w.Write([]byte("null"))
+	writeLyrics(w, "", "")
 }

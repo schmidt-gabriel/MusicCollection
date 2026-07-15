@@ -19,10 +19,12 @@ import (
 )
 
 var coll *mongo.Collection
+var lyricsColl *mongo.Collection
 
 const (
-	CollectionName = "CD"
-	Group          = "$group"
+	CollectionName       = "CD"
+	LyricsCollectionName = "LYRICS"
+	Group                = "$group"
 )
 
 func init() {
@@ -90,10 +92,39 @@ func GetColl() *mongo.Collection {
 		log.Fatal("You must set your 'MONGODB_DATABASE' environment variable.")
 	}
 
-	coll = client.Database(database).Collection("CD")
+	coll = client.Database(database).Collection(CollectionName)
+	lyricsColl = client.Database(database).Collection(LyricsCollectionName)
 
 	log.Printf("Connected to MongoDB! Collection %s", coll.Name())
 	return coll
+}
+
+// GetCachedLyrics returns the cached lyrics for a normalized key, if present.
+func GetCachedLyrics(key string) (found bool, plain string, synced string) {
+	var doc struct {
+		Plain  string `bson:"PLAIN"`
+		Synced string `bson:"SYNCED"`
+	}
+	if err := lyricsColl.FindOne(context.TODO(), bson.M{"_id": key}).Decode(&doc); err != nil {
+		return false, "", ""
+	}
+	return true, doc.Plain, doc.Synced
+}
+
+// SaveLyrics upserts lyrics into the cache collection keyed by the normalized key.
+func SaveLyrics(key, artist, title, album, plain, synced string) {
+	_, _ = lyricsColl.UpdateOne(context.TODO(),
+		bson.M{"_id": key},
+		bson.M{"$set": bson.M{
+			"ARTIST":    artist,
+			"TITLE":     title,
+			"ALBUM":     album,
+			"PLAIN":     plain,
+			"SYNCED":    synced,
+			"CACHED_AT": time.Now(),
+		}},
+		options.Update().SetUpsert(true),
+	)
 }
 
 func GetAll() []models.Collection {
