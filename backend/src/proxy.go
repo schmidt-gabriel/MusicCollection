@@ -246,16 +246,16 @@ func writeLyrics(w http.ResponseWriter, plain, synced string, instrumental bool)
 	})
 }
 
-// fetchLyricsFromLRCLIB queries LRCLIB and returns the best match's plain and
-// synced lyrics, plus whether the track is flagged instrumental. All zero when
-// nothing is found.
-func fetchLyricsFromLRCLIB(artist, title, album string) (plain string, synced string, instrumental bool) {
+// fetchLyricsFromLRCLIB queries LRCLIB by artist + track and returns the best
+// match's plain and synced lyrics, plus whether the track is flagged
+// instrumental. All zero when nothing is found. The album is intentionally NOT
+// sent: this catalog's album titles are abbreviated/non-standard (e.g. "FLICK OF
+// SWITCH" vs "Flick of the Switch"), so passing album_name only causes misses;
+// lyrics don't depend on the album anyway.
+func fetchLyricsFromLRCLIB(artist, title string) (plain string, synced string, instrumental bool) {
 	params := url.Values{"track_name": {title}}
 	if artist != "" {
 		params.Set("artist_name", artist)
-	}
-	if album != "" {
-		params.Set("album_name", album)
 	}
 
 	req, err := http.NewRequest(http.MethodGet, lrclibAPI+"/api/search?"+params.Encode(), nil)
@@ -298,7 +298,7 @@ func ensureLyricsCached(artist, title, album string) {
 	if cached, _, _, _ := db.GetCachedLyrics(key); cached {
 		return
 	}
-	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title, album)
+	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title)
 	db.SaveLyrics(key, artist, title, album, plain, synced, instrumental)
 }
 
@@ -341,7 +341,7 @@ func lyricsSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. LRCLIB API, recording the attempt (found, instrumental, or miss).
-	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title, album)
+	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title)
 	db.SaveLyrics(key, artist, title, album, plain, synced, instrumental)
 	writeLyrics(w, plain, synced, instrumental)
 }
@@ -367,8 +367,9 @@ func lyricsInstrumental(w http.ResponseWriter, r *http.Request) {
 // ---------- Background lyrics sweep ----------
 
 const (
-	lyricsSweepInterval = time.Hour
-	lyricsSweepBatch    = 10 // tracks per run, kept small to be gentle on LRCLIB
+	// ~30 LRCLIB requests per hour: 10 tracks every 20 minutes, gentle.
+	lyricsSweepInterval = 20 * time.Minute
+	lyricsSweepBatch    = 10
 )
 
 // runLyricsSweep warms the cache for a small batch of tracks that have no LYRICS
