@@ -59,11 +59,13 @@ modal offers "Tentar novamente" (`/lyrics?refresh=1`, re-queries LRCLIB) and
 "Marcar como instrumental" (`POST /lyrics/instrumental`, stores `INSTRUMENTAL:true`
 so it shows as instrumental and is skipped). Every lookup records the attempt
 (misses stored with `FOUND:false`), so a track is fetched at most once and the
-caches converge. Two background jobs warm the cache: adding an album
-(`/new/album`) fires `prefetchAlbumLyrics` for that album's tracks, and
+caches converge. LRCLIB flags instrumental tracks (`instrumental:true` with no lyrics); those are
+stored as instrumental automatically. Two background jobs warm the cache: adding
+an album (`/new/album`) fires `prefetchAlbumLyrics` for that album's tracks, and
 `startLyricsSweeper` (booted from `main`) fetches a small batch (`lyricsSweepBatch`,
-hourly) of not-yet-attempted tracks found via `FindTracksMissingLyrics`, staying
-gentle on LRCLIB. **The mobile app still calls
+hourly) of not-yet-attempted tracks found via `FindTracksMissingLyrics`, and
+**stops itself** once nothing is left (new albums are covered by the insert-time
+prefetch), staying gentle on LRCLIB. **The mobile app still calls
 Discogs directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so
 the Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
