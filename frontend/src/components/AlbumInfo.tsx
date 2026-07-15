@@ -3,7 +3,7 @@ import { AlbumData as Album } from '../models/Album'
 import { Image, ListGroup, Row, Col, Container, Button, Badge, Card, Modal } from 'react-bootstrap'
 import DateTimeFormat from '../services/Utils';
 import * as FaIcons from 'react-icons/fa'
-import { FetchLyrics } from '../services/Lyrics';
+import { FetchLyrics, MarkInstrumental } from '../services/Lyrics';
 import LyricsModal from './LyricsModal';
 
 function numberToLetter(number: number) {
@@ -39,8 +39,10 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
     const [lyricsOpen, setLyricsOpen] = useState(false);
     const [lyricsLoading, setLyricsLoading] = useState(false);
     const [lyricsTitle, setLyricsTitle] = useState('');
+    const [lyricsTrack, setLyricsTrack] = useState('');
     const [lyricsPlain, setLyricsPlain] = useState('');
     const [lyricsSynced, setLyricsSynced] = useState('');
+    const [lyricsInstrumental, setLyricsInstrumental] = useState(false);
 
     if (albumInfo === undefined || albumInfo.title === '') {
         return (
@@ -62,16 +64,34 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
 
     // Fetch the lyrics from LRCLIB and show them in the modal (karaoke when the
     // track has synced/LRC lyrics, plain text otherwise).
-    const openLyrics = async (trackTitle: string) => {
-        setLyricsTitle(`${albumInfo.artist} - ${trackTitle}`);
+    const loadLyrics = async (trackTitle: string, force: boolean) => {
         setLyricsPlain('');
         setLyricsSynced('');
+        setLyricsInstrumental(false);
         setLyricsLoading(true);
-        setLyricsOpen(true);
-        const res = await FetchLyrics(albumInfo.artist, trackTitle, albumInfo.title);
+        const res = await FetchLyrics(albumInfo.artist, trackTitle, albumInfo.title, force);
         setLyricsLoading(false);
         setLyricsPlain(res?.plainLyrics ?? '');
         setLyricsSynced(res?.syncedLyrics ?? '');
+        setLyricsInstrumental(res?.instrumental ?? false);
+    };
+
+    const openLyrics = (trackTitle: string) => {
+        setLyricsTrack(trackTitle);
+        setLyricsTitle(`${albumInfo.artist} - ${trackTitle}`);
+        setLyricsOpen(true);
+        loadLyrics(trackTitle, false);
+    };
+
+    const retryLyrics = () => loadLyrics(lyricsTrack, true);
+
+    const markInstrumental = async () => {
+        setLyricsLoading(true);
+        await MarkInstrumental(albumInfo.artist, lyricsTrack, albumInfo.title);
+        setLyricsLoading(false);
+        setLyricsPlain('');
+        setLyricsSynced('');
+        setLyricsInstrumental(true);
     };
 
     return (
@@ -220,6 +240,9 @@ const SelectArtist = ({ albumInfo, handleShowModal, setModalType, handleShowModa
                 loading={lyricsLoading}
                 plainLyrics={lyricsPlain}
                 syncedLyrics={lyricsSynced}
+                instrumental={lyricsInstrumental}
+                onRetry={retryLyrics}
+                onMarkInstrumental={markInstrumental}
             />
         </Container>
     );

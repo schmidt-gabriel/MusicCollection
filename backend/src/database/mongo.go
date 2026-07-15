@@ -100,31 +100,78 @@ func GetColl() *mongo.Collection {
 }
 
 // GetCachedLyrics returns the cached lyrics for a normalized key, if present.
-func GetCachedLyrics(key string) (found bool, plain string, synced string) {
+func GetCachedLyrics(key string) (cached bool, plain string, synced string, instrumental bool) {
 	var doc struct {
-		Plain  string `bson:"PLAIN"`
-		Synced string `bson:"SYNCED"`
+		Plain        string `bson:"PLAIN"`
+		Synced       string `bson:"SYNCED"`
+		Instrumental bool   `bson:"INSTRUMENTAL"`
 	}
 	if err := lyricsColl.FindOne(context.TODO(), bson.M{"_id": key}).Decode(&doc); err != nil {
-		return false, "", ""
+		return false, "", "", false
 	}
-	return true, doc.Plain, doc.Synced
+	return true, doc.Plain, doc.Synced, doc.Instrumental
 }
 
-// SaveLyrics upserts lyrics into the cache collection keyed by the normalized key.
-func SaveLyrics(key, artist, title, album, plain, synced string) {
+// SaveLyrics upserts a lyrics attempt into the cache collection keyed by the
+// normalized key. It stores the doc even when nothing was found (FOUND=false),
+// so a track is not looked up again and the background sweep converges. Pass
+// instrumental=true to record a track with no lyrics (from the LRCLIB flag or a
+// manual mark).
+func SaveLyrics(key, artist, title, album, plain, synced string, instrumental bool) {
 	_, _ = lyricsColl.UpdateOne(context.TODO(),
 		bson.M{"_id": key},
 		bson.M{"$set": bson.M{
-			"ARTIST":    artist,
-			"TITLE":     title,
-			"ALBUM":     album,
-			"PLAIN":     plain,
-			"SYNCED":    synced,
-			"CACHED_AT": time.Now(),
+			"ARTIST":       artist,
+			"TITLE":        title,
+			"ALBUM":        album,
+			"PLAIN":        plain,
+			"SYNCED":       synced,
+			"FOUND":        plain != "" || synced != "",
+			"INSTRUMENTAL": instrumental,
+			"CACHED_AT":    time.Now(),
 		}},
 		options.Update().SetUpsert(true),
 	)
+}
+
+// FindTracksMissingLyrics returns up to `limit` album tracks that have no entry
+// yet in the LYRICS cache. The normalized key is computed server-side to match
+// lyricsKey (UPPER+TRIM of artist|track|album) and joined against LYRICS._id.
+func FindTracksMissingLyrics(limit int) []bson.M {
+	upperTrim := func(field string) bson.M {
+		return bson.M{"$toUpper": bson.M{"$trim": bson.M{"input": field}}}
+	}
+	pipeline := bson.A{
+		bson.M{"$match": bson.M{"DISCOGS.tracks.0": bson.M{"$exists": true}}},
+		bson.M{"$unwind": "$DISCOGS.tracks"},
+		bson.M{"$match": bson.M{"DISCOGS.tracks.title": bson.M{"$nin": bson.A{"", nil}}}},
+		bson.M{"$project": bson.M{
+			"artist": "$ARTIST",
+			"album":  "$TITLE",
+			"track":  "$DISCOGS.tracks.title",
+			"key": bson.M{"$concat": bson.A{
+				upperTrim("$ARTIST"), "|", upperTrim("$DISCOGS.tracks.title"), "|", upperTrim("$TITLE"),
+			}},
+		}},
+		bson.M{"$lookup": bson.M{
+			"from":         LyricsCollectionName,
+			"localField":   "key",
+			"foreignField": "_id",
+			"as":           "cached",
+		}},
+		bson.M{"$match": bson.M{"cached": bson.M{"$size": 0}}},
+		bson.M{"$limit": int64(limit)},
+	}
+
+	cursor, err := coll.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return nil
+	}
+	var results []bson.M
+	if err := cursor.All(context.TODO(), &results); err != nil {
+		return nil
+	}
+	return results
 }
 
 func GetAll() []models.Collection {

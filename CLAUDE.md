@@ -54,7 +54,16 @@ proxy: it checks the Mongo `LYRICS` collection first (cache, keyed by normalized
 `ARTIST|TITLE|ALBUM`) and only calls LRCLIB (keyless, community-sourced, plain +
 synced/LRC) on a miss, then saves the result back. The `Letra` button per track
 shows it in a karaoke modal (`frontend/src/components/LyricsModal.tsx`), or
-"Letra não encontrada" when neither Mongo nor LRCLIB has it. **The mobile app still calls
+"Letra não encontrada" when neither Mongo nor LRCLIB has it. From that state the
+modal offers "Tentar novamente" (`/lyrics?refresh=1`, re-queries LRCLIB) and
+"Marcar como instrumental" (`POST /lyrics/instrumental`, stores `INSTRUMENTAL:true`
+so it shows as instrumental and is skipped). Every lookup records the attempt
+(misses stored with `FOUND:false`), so a track is fetched at most once and the
+caches converge. Two background jobs warm the cache: adding an album
+(`/new/album`) fires `prefetchAlbumLyrics` for that album's tracks, and
+`startLyricsSweeper` (booted from `main`) fetches a small batch (`lyricsSweepBatch`,
+hourly) of not-yet-attempted tracks found via `FindTracksMissingLyrics`, staying
+gentle on LRCLIB. **The mobile app still calls
 Discogs directly with the claim token** (`mobile/lib/src/utils/discogs.dart`), so
 the Auth0 Action claims for these secrets **must stay until mobile is migrated to
 the same proxies**; only then remove them from the Action.
@@ -93,7 +102,8 @@ data route; `/health` is open. Data routes include `/artists`, `/album/artist`,
 `/all`, `/totals`, `/new/album`, `/update/album`, `/delete/album`, the generic
 `/find`, `/findAndSort`, `/aggregation`, plus the third-party proxies
 `/spotify/search`, `/discogs/search`, `/discogs/release`, `/discogs/tracks`,
-`/lyrics` (all GET; see `proxy.go`). On success `/new/album` returns the new 24-hex id and
+`/lyrics` (GET; `refresh=1` forces a re-fetch), and `/lyrics/instrumental` (POST,
+marks a track instrumental); see `proxy.go`. On success `/new/album` returns the new 24-hex id and
 `/update/album` returns a modified count; the frontend uses that shape to tell
 insert from update.
 

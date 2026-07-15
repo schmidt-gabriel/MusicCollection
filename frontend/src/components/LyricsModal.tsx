@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Button, Spinner } from 'react-bootstrap'
-import { FaMicrophoneAlt, FaPlay, FaPause, FaRedo } from 'react-icons/fa'
+import { FaMicrophoneAlt, FaPlay, FaPause, FaRedo, FaMusic } from 'react-icons/fa'
 import { stripSyncedTimestamps } from '../services/Lyrics'
 
 interface LrcLine {
@@ -31,13 +31,16 @@ function formatTime(seconds: number): string {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-const LyricsModal = ({ show, onHide, title, loading, plainLyrics, syncedLyrics }: {
+const LyricsModal = ({ show, onHide, title, loading, plainLyrics, syncedLyrics, instrumental, onRetry, onMarkInstrumental }: {
     show: boolean,
     onHide: () => void,
     title: string,
     loading: boolean,
     plainLyrics: string,
     syncedLyrics: string,
+    instrumental: boolean,
+    onRetry: () => void,
+    onMarkInstrumental: () => void,
 }) => {
     const lines = useMemo(() => parseLrc(syncedLyrics), [syncedLyrics]);
     const hasSynced = lines.length > 0;
@@ -128,7 +131,26 @@ const LyricsModal = ({ show, onHide, title, loading, plainLyrics, syncedLyrics }
                         )
                         : plainText
                             ? <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{plainText}</pre>
-                            : <div className="text-center py-4 text-muted">Letra não encontrada</div>}
+                            : instrumental
+                                ? (
+                                    <div className="empty-state">
+                                        <FaMusic size={40} />
+                                        <div className="fw-semibold">Música instrumental</div>
+                                    </div>
+                                )
+                                : (
+                                    <div className="empty-state">
+                                        <div className="text-muted">Letra não encontrada</div>
+                                        <div className="d-flex gap-2 flex-wrap justify-content-center">
+                                            <Button size="sm" variant="outline-primary" onClick={onRetry}>
+                                                <FaRedo className="me-1" /> Tentar novamente
+                                            </Button>
+                                            <Button size="sm" variant="outline-secondary" onClick={onMarkInstrumental}>
+                                                <FaMusic className="me-1" /> Marcar como instrumental
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
             </Modal.Body>
             {(hasSynced || plainText) && (
                 <Modal.Footer className="justify-content-between">

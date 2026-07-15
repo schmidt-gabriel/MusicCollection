@@ -14,7 +14,7 @@ function album(id: string, artist: string, title: string, year: number, media = 
         origin: 'BR',
         editionYear: year,
         ifpiMastering: '', ifpiMould: '', barcode: '', matriz: '', lote: '', obs: '',
-        discogs: { id: 1, cover_image: cover, uri: '/release/1', len: 1 },
+        discogs: { id: 1, cover_image: cover, uri: '/release/1', len: 1, tracks: [{ position: 'A1', type_: 'track', title: 'WAR PIGS', duration: '7:57' }] },
         spotify: { id: 's1', external_urls: { spotify: 'https://open.spotify.com' }, artists: [{ external_urls: { spotify: 'https://open.spotify.com' } }] },
         discs: [{ discNumber: '1', weight: '', matriz: ['NA'] }],
     };
@@ -46,8 +46,11 @@ export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
     if (path.startsWith('/discogs/release')) {
         return {} as T;
     }
+    if (path.startsWith('/lyrics/instrumental')) {
+        return { ok: true } as T;
+    }
     if (path.startsWith('/lyrics')) {
-        return { trackName: 'Mock', artistName: 'Mock', plainLyrics: 'Linha um\nLinha dois\nLinha tres', syncedLyrics: '' } as T;
+        return { plainLyrics: '', syncedLyrics: '', instrumental: true } as T;
     }
     switch (path) {
         case '/artists':

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	db "music-go-api/database"
+	"music-go-api/models"
 )
 
 // These handlers keep the Spotify and Discogs credentials on the server. The
@@ -28,6 +30,8 @@ const (
 	spotifyToken = "https://accounts.spotify.com/api/token"
 	spotifyAPI   = "https://api.spotify.com/v1"
 	lrclibAPI    = "https://lrclib.net"
+	// LRCLIB asks clients to identify themselves.
+	lrclibUA = "MusicCollection/1.0 (https://github.com/gabriel/music-collection)"
 )
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
@@ -155,7 +159,12 @@ func spotifyGet(reqURL string) (*http.Response, error) {
 var (
 	discogsIDRe   = regexp.MustCompile(`^[0-9]+$`)
 	discogsTypeRe = regexp.MustCompile(`^[a-z]+$`)
+	objectIDRe    = regexp.MustCompile(`^[a-f0-9]{24}$`)
 )
+
+// isInsertedID reports whether an /new/album response is a real Mongo id (as
+// opposed to "Album already exists" or an error string).
+func isInsertedID(s string) bool { return objectIDRe.MatchString(s) }
 
 func discogsToken() string { return os.Getenv("DISCOGS_TOKEN") }
 
@@ -228,38 +237,19 @@ func lyricsKey(artist, title, album string) string {
 	return norm(artist) + "|" + norm(title) + "|" + norm(album)
 }
 
-func writeLyrics(w http.ResponseWriter, plain, synced string) {
+func writeLyrics(w http.ResponseWriter, plain, synced string, instrumental bool) {
 	w.Header().Set(contentType, "application/json; charset=UTF-8")
-	if plain == "" && synced == "" {
-		w.Write([]byte("null"))
-		return
-	}
-	json.NewEncoder(w).Encode(map[string]string{
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"plainLyrics":  plain,
 		"syncedLyrics": synced,
+		"instrumental": instrumental,
 	})
 }
 
-// lyricsSearch returns lyrics for a track. It first checks the Mongo LYRICS
-// cache; on a miss it queries LRCLIB (keyless, community-sourced) and, when a
-// match is found, stores it so the next lookup is served from Mongo.
-func lyricsSearch(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Query().Get("title")
-	if title == "" {
-		http.Error(w, "missing title", http.StatusBadRequest)
-		return
-	}
-	artist := r.URL.Query().Get("artist")
-	album := r.URL.Query().Get("album")
-	key := lyricsKey(artist, title, album)
-
-	// 1. Mongo cache.
-	if found, plain, synced := db.GetCachedLyrics(key); found {
-		writeLyrics(w, plain, synced)
-		return
-	}
-
-	// 2. LRCLIB API.
+// fetchLyricsFromLRCLIB queries LRCLIB and returns the best match's plain and
+// synced lyrics, plus whether the track is flagged instrumental. All zero when
+// nothing is found.
+func fetchLyricsFromLRCLIB(artist, title, album string) (plain string, synced string, instrumental bool) {
 	params := url.Values{"track_name": {title}}
 	if artist != "" {
 		params.Set("artist_name", artist)
@@ -270,34 +260,151 @@ func lyricsSearch(w http.ResponseWriter, r *http.Request) {
 
 	req, err := http.NewRequest(http.MethodGet, lrclibAPI+"/api/search?"+params.Encode(), nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return "", "", false
 	}
-	// LRCLIB asks clients to identify themselves.
-	req.Header.Set("User-Agent", "MusicCollection/1.0 (https://github.com/gabriel/music-collection)")
+	req.Header.Set("User-Agent", lrclibUA)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
+		return "", "", false
 	}
 	defer resp.Body.Close()
 
 	var results []struct {
 		PlainLyrics  string `json:"plainLyrics"`
 		SyncedLyrics string `json:"syncedLyrics"`
+		Instrumental bool   `json:"instrumental"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
+		return "", "", false
 	}
-
+	// Prefer a result that actually has lyrics.
 	for _, res := range results {
 		if res.PlainLyrics != "" || res.SyncedLyrics != "" {
-			db.SaveLyrics(key, artist, title, album, res.PlainLyrics, res.SyncedLyrics)
-			writeLyrics(w, res.PlainLyrics, res.SyncedLyrics)
+			return res.PlainLyrics, res.SyncedLyrics, false
+		}
+	}
+	// No lyrics: if the best match is flagged instrumental, record that.
+	if len(results) > 0 && results[0].Instrumental {
+		return "", "", true
+	}
+	return "", "", false
+}
+
+// ensureLyricsCached fetches lyrics for a track when not already attempted and
+// records the attempt (found, instrumental, or miss). Used by the background jobs.
+func ensureLyricsCached(artist, title, album string) {
+	key := lyricsKey(artist, title, album)
+	if cached, _, _, _ := db.GetCachedLyrics(key); cached {
+		return
+	}
+	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title, album)
+	db.SaveLyrics(key, artist, title, album, plain, synced, instrumental)
+}
+
+// prefetchAlbumLyrics warms the lyrics cache for every track of a freshly added
+// album. Run in a goroutine (fire-and-forget); requests are sequential and
+// spaced out to stay polite to LRCLIB.
+func prefetchAlbumLyrics(album models.Collection) {
+	defer func() { _ = recover() }()
+	seen := map[string]bool{}
+	for _, t := range album.Discogs.Tracks {
+		title := strings.TrimSpace(t.Title)
+		if title == "" || seen[strings.ToUpper(title)] {
+			continue
+		}
+		seen[strings.ToUpper(title)] = true
+		ensureLyricsCached(album.Artist, title, album.Title)
+		time.Sleep(300 * time.Millisecond)
+	}
+}
+
+// lyricsSearch returns lyrics for a track. It first checks the Mongo LYRICS
+// cache; on a miss (or when refresh=1 forces it) it queries LRCLIB (keyless,
+// community-sourced), recording the attempt so the next lookup hits Mongo.
+func lyricsSearch(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Query().Get("title")
+	if title == "" {
+		http.Error(w, "missing title", http.StatusBadRequest)
+		return
+	}
+	artist := r.URL.Query().Get("artist")
+	album := r.URL.Query().Get("album")
+	key := lyricsKey(artist, title, album)
+
+	// 1. Mongo cache, unless the client forces a fresh lookup.
+	if r.URL.Query().Get("refresh") != "1" {
+		if cached, plain, synced, instrumental := db.GetCachedLyrics(key); cached {
+			writeLyrics(w, plain, synced, instrumental)
 			return
 		}
 	}
-	writeLyrics(w, "", "")
+
+	// 2. LRCLIB API, recording the attempt (found, instrumental, or miss).
+	plain, synced, instrumental := fetchLyricsFromLRCLIB(artist, title, album)
+	db.SaveLyrics(key, artist, title, album, plain, synced, instrumental)
+	writeLyrics(w, plain, synced, instrumental)
+}
+
+// lyricsInstrumental marks a track as instrumental (POST body: artist, title,
+// album), so it no longer shows as "not found" and is not fetched again.
+func lyricsInstrumental(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Artist string `json:"artist"`
+		Title  string `json:"title"`
+		Album  string `json:"album"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Title) == "" {
+		http.Error(w, "missing title", http.StatusBadRequest)
+		return
+	}
+	key := lyricsKey(body.Artist, body.Title, body.Album)
+	db.SaveLyrics(key, body.Artist, body.Title, body.Album, "", "", true)
+	w.Header().Set(contentType, "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+}
+
+// ---------- Background lyrics sweep ----------
+
+const (
+	lyricsSweepInterval = time.Hour
+	lyricsSweepBatch    = 10 // tracks per run, kept small to be gentle on LRCLIB
+)
+
+// runLyricsSweep warms the cache for a small batch of tracks that have no LYRICS
+// entry yet. It returns done=true when there is nothing left to fetch. Because
+// misses (and instrumentals) are also recorded, the sweep converges.
+func runLyricsSweep(limit int) (done bool) {
+	defer func() { _ = recover() }()
+
+	missing := db.FindTracksMissingLyrics(limit)
+	if len(missing) == 0 {
+		return true
+	}
+	log.Printf("lyrics sweep: warming %d track(s)", len(missing))
+	for _, m := range missing {
+		artist, _ := m["artist"].(string)
+		album, _ := m["album"].(string)
+		track, _ := m["track"].(string)
+		if strings.TrimSpace(track) == "" {
+			continue
+		}
+		ensureLyricsCached(artist, track, album)
+		time.Sleep(500 * time.Millisecond)
+	}
+	return false
+}
+
+// startLyricsSweeper runs the sweep shortly after boot and then every interval,
+// stopping itself once every track has been attempted (new albums are handled
+// on insert by prefetchAlbumLyrics). Call once as a goroutine from main.
+func startLyricsSweeper() {
+	time.Sleep(time.Minute)
+	for {
+		if runLyricsSweep(lyricsSweepBatch) {
+			log.Println("lyrics sweep: nothing left to fetch, stopping")
+			return
+		}
+		time.Sleep(lyricsSweepInterval)
+	}
 }

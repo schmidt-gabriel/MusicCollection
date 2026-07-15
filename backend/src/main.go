@@ -58,26 +58,26 @@ func find(w http.ResponseWriter, rq *http.Request) {
 // @Security BearerAuth
 // @Router /query [post]
 func findAndSort(w http.ResponseWriter, rq *http.Request) {
-    type FindAndSort struct {
-        Query map[string]interface{} `json:"query"`
-        Sort  map[string]interface{} `json:"sort"`
-    }
+	type FindAndSort struct {
+		Query map[string]interface{} `json:"query"`
+		Sort  map[string]interface{} `json:"sort"`
+	}
 
-    var p FindAndSort
-    if err := json.NewDecoder(rq.Body).Decode(&p); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
+	var p FindAndSort
+	if err := json.NewDecoder(rq.Body).Decode(&p); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
-    value := db.FindAndSort(p.Query, p.Sort)
-    if len(value) == 0 {
-        _ = json.NewEncoder(w).Encode([]interface{}{})
-        return
-    }
+	value := db.FindAndSort(p.Query, p.Sort)
+	if len(value) == 0 {
+		_ = json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
 
-    _ = json.NewEncoder(w).Encode(value)
+	_ = json.NewEncoder(w).Encode(value)
 }
 
 // @Summary Aggregation
@@ -243,6 +243,11 @@ func insertAlbum(w http.ResponseWriter, rq *http.Request) {
 	}
 	normalizeAlbum(&p)
 	resp := db.InsertAlbum(p)
+	// On a successful insert, warm the lyrics cache for the album's tracks in
+	// the background so the "Letra" button is instant later.
+	if isInsertedID(resp) {
+		go prefetchAlbumLyrics(p)
+	}
 	json.NewEncoder(w).Encode(map[string]string{"Message": resp})
 }
 
@@ -476,6 +481,10 @@ func main() {
 	router.Handle("/discogs/release", jwt.EnsureValidToken()(http.HandlerFunc(discogsRelease))).Methods("GET")
 	router.Handle("/discogs/tracks", jwt.EnsureValidToken()(http.HandlerFunc(discogsTracks))).Methods("GET")
 	router.Handle("/lyrics", jwt.EnsureValidToken()(http.HandlerFunc(lyricsSearch))).Methods("GET")
+	router.Handle("/lyrics/instrumental", jwt.EnsureValidToken()(http.HandlerFunc(lyricsInstrumental))).Methods("POST")
+
+	// Periodically warm the lyrics cache for a few uncached tracks.
+	go startLyricsSweeper()
 
 	fmt.Println("Server running on port 3000")
 	http.ListenAndServe(":3000", handlers.LoggingHandler(os.Stdout, corsMiddleware(router)))
