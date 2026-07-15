@@ -372,12 +372,22 @@ const (
 )
 
 // runLyricsSweep warms the cache for a small batch of tracks that have no LYRICS
-// entry yet. It returns done=true when there is nothing left to fetch. Because
-// misses (and instrumentals) are also recorded, the sweep converges.
+// entry yet. It returns done=true only when the query succeeded and found
+// nothing left. On a query error it logs and returns false so the sweep keeps
+// retrying instead of stopping. Misses/instrumentals are recorded, so it
+// converges.
 func runLyricsSweep(limit int) (done bool) {
-	defer func() { _ = recover() }()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("lyrics sweep: recovered from panic: %v", r)
+		}
+	}()
 
-	missing := db.FindTracksMissingLyrics(limit)
+	missing, err := db.FindTracksMissingLyrics(limit)
+	if err != nil {
+		log.Printf("lyrics sweep: query failed, will retry: %v", err)
+		return false
+	}
 	if len(missing) == 0 {
 		return true
 	}
@@ -399,6 +409,11 @@ func runLyricsSweep(limit int) (done bool) {
 // stopping itself once every track has been attempted (new albums are handled
 // on insert by prefetchAlbumLyrics). Call once as a goroutine from main.
 func startLyricsSweeper() {
+	if n, err := db.CountAlbumsWithTracks(); err != nil {
+		log.Printf("lyrics sweep: scheduled (album-track count failed: %v)", err)
+	} else {
+		log.Printf("lyrics sweep: scheduled; %d album(s) have tracks", n)
+	}
 	time.Sleep(time.Minute)
 	for {
 		if runLyricsSweep(lyricsSweepBatch) {

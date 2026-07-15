@@ -134,12 +134,18 @@ func SaveLyrics(key, artist, title, album, plain, synced string, instrumental bo
 	)
 }
 
+// CountAlbumsWithTracks reports how many albums have a non-empty DISCOGS.tracks
+// array (used to sanity-check whether the sweep has anything to work with).
+func CountAlbumsWithTracks() (int64, error) {
+	return coll.CountDocuments(context.TODO(), bson.M{"DISCOGS.tracks.0": bson.M{"$exists": true}})
+}
+
 // FindTracksMissingLyrics returns up to `limit` album tracks that have no entry
 // yet in the LYRICS cache. The normalized key is computed server-side to match
 // lyricsKey (UPPER+TRIM of artist|track|album) and joined against LYRICS._id.
-func FindTracksMissingLyrics(limit int) []bson.M {
+func FindTracksMissingLyrics(limit int) ([]bson.M, error) {
 	upperTrim := func(field string) bson.M {
-		return bson.M{"$toUpper": bson.M{"$trim": bson.M{"input": field}}}
+		return bson.M{"$toUpper": bson.M{"$trim": bson.M{"input": bson.M{"$ifNull": bson.A{field, ""}}}}}
 	}
 	pipeline := bson.A{
 		bson.M{"$match": bson.M{"DISCOGS.tracks.0": bson.M{"$exists": true}}},
@@ -165,13 +171,13 @@ func FindTracksMissingLyrics(limit int) []bson.M {
 
 	cursor, err := coll.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var results []bson.M
 	if err := cursor.All(context.TODO(), &results); err != nil {
-		return nil
+		return nil, err
 	}
-	return results
+	return results, nil
 }
 
 func GetAll() []models.Collection {
