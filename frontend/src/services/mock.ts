@@ -30,6 +30,17 @@ const albums = [
 
 export async function mockFetch<T>(path: string, body?: unknown): Promise<T> {
     await new Promise((r) => setTimeout(r, 250));
+    if (path === '/aggregation' && Array.isArray(body) && body[0]?.$sort) {
+        // Recently added: raw UPPERCASE docs with ObjectId-like ids, newest first.
+        const now = Math.floor(Date.now() / 1000);
+        return albums.map((a, i) => ({
+            _id: (now - i * 86400 * 3).toString(16).padStart(8, '0') + '0000000000000000',
+            ARTIST: a.artist, TITLE: a.title, MEDIA: a.media, RELEASE_YEAR: a.releaseYear,
+            PURCHASE: a.purchase, ORIGIN: a.origin, EDITION_YEAR: a.editionYear,
+            DISCOGS: a.discogs, SPOTIFY: a.spotify,
+            DISCS: [{ DISC_NUMBER: '1', WEIGHT: '', MATRIZ: ['NA'] }],
+        })) as T;
+    }
     if (path === '/aggregation' && Array.isArray(body) && body[0]?.$project) {
         return albums.map((a) => ({ _id: a.id, TITLE: a.title, ARTIST: a.artist })) as T;
     }
