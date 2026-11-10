@@ -128,8 +128,9 @@ service). Required repo secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
 `ENV_FILE` (the UI production `.env`).
 
 Server runbook (DNS, TLS, nginx, systemd) is in the README "Production server"
-section. Key facts: DNS is on DNS Exit (`publicvm.com` is a DNS Exit zone); two
-domains with different spelling (`disccollection.shop` two `l`,
-`hostname` one `l`); TLS via `sudo certbot --nginx -d ...`; the
+section. Key facts: DNS is on DNS Exit; the production domain changes yearly, so docs
+use `<your-domain>` and never name it (on a change, update the DNS Exit records,
+the nginx `server_name`, the TLS cert, and the Auth0 callback/logout/web-origin
+URLs); TLS via `sudo certbot --nginx -d <your-domain> -d app.<your-domain> -d api.<your-domain>`; the
 API env (incl. the Mongo/Auth0/Discogs/Spotify secrets) lives only in
 `/etc/systemd/system/music_api.service` on the VM, never in the repo.

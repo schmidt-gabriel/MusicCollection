@@ -120,28 +120,24 @@ runbook, not something the app reads.
 
 ### DNS
 
-DNS for the domains is managed at **DNS Exit** (dnsexit.com). `publicvm.com` is a
-DNS Exit free dynamic‑DNS zone, so `hostname` and its
-subdomains are records there. Point each host (root, `app.`, `api.`) at the VM's
-public IP.
+DNS is managed at **DNS Exit** (dnsexit.com). Point each host (root, `app.`,
+`api.`) of `<your-domain>` at the VM's public IP.
 
-Two domains are in use, and they are spelled differently, watch the double `l`:
-
-| Domain | Notes |
-| --- | --- |
-| `disccollection.shop` (`www.`, `app.`, `api.`) | primary, two `l` |
-| `hostname` (`app.`, `api.`) | DNS Exit, one `l` |
+The production domain changes yearly. When it does, update the DNS records (DNS
+Exit), the nginx `server_name` of each server block, the TLS certificate (rerun
+Certbot below), and the Auth0 application's Allowed Callback, Logout and Web
+Origin URLs.
 
 ### TLS certificates (Certbot)
 
 Certificates are issued with Certbot's nginx plugin. To issue or renew the
-publicvm.com bundle:
+certificate for the current domain:
 
 ```bash
-sudo certbot --nginx -d hostname -d app.hostname -d api.hostname
+sudo certbot --nginx -d <your-domain> -d app.<your-domain> -d api.<your-domain>
 ```
 
-Certbot writes the certs under `/etc/letsencrypt/live/<domain>/` and edits the
+Certbot writes the certs under `/etc/letsencrypt/live/<your-domain>/` and edits the
 nginx server blocks in place. The nginx config lives at
 `/etc/nginx/sites-available/music-app` and has one `server` block per host plus a
 port‑80 block that redirects every host to HTTPS. The root/`app.` hosts serve the
