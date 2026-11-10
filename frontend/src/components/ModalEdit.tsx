@@ -220,6 +220,7 @@ const ModalEdit = ({ showModal, modalType, albumInfo, handleCloseModal, refreshA
                                         <option>VINIL &gt; CD</option>
                                         <option>VINIL &gt; MP3</option>
                                         <option>VINIL 7'</option>
+                                        <option>VINIL 4'</option>
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
