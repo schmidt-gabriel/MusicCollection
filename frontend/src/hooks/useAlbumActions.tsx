@@ -7,7 +7,7 @@ import { showToast } from '../components/Toasts';
  * Shared state and handlers for the album management pages (Manager and
  * Tree): album list, selected album, the three modals and their actions.
  */
-export function useAlbumActions() {
+export function useAlbumActions(options: { reload?: (album: AlbumData) => void } = {}) {
     const [albuns, setAlbuns] = useState<AlbumData[]>();
     const [albumInfo, setAlbumInfo] = useState<AlbumData>();
     const [modalType, setModalType] = useState<string>("None");
@@ -41,11 +41,16 @@ export function useAlbumActions() {
             .finally(() => setLoading(false));
     }
 
+    // Pages with their own list (e.g. Recém adicionados) pass `reload`;
+    // the default re-lists the edited album's artist.
+    const reloadList = (album: AlbumData) =>
+        options.reload ? options.reload(album) : loadAlbums(album.artist);
+
     function refreshAfterEdit(album: AlbumData) {
         clearContent();
         handleCloseModal();
         showToast(`Album ${album.title} atualizado!`);
-        loadAlbums(album.artist);
+        reloadList(album);
         setAlbumInfo(album);
     }
 
@@ -55,7 +60,7 @@ export function useAlbumActions() {
                 clearContent();
                 handleCloseModalDelete();
                 showToast(`Album ${album.title} removido!`);
-                loadAlbums(album.artist);
+                reloadList(album);
             })
             .catch(() => showToast("Não foi possível remover o disco", "danger"));
     }
@@ -80,7 +85,7 @@ export function useAlbumActions() {
                 showToast("Atualizado com sucesso!");
                 clearContent();
                 handleCloseModalFixDiscogs();
-                loadAlbums(albumInfo.artist);
+                reloadList(albumInfo);
             })
             .catch(() => showToast("Não foi possível atualizar o Discogs", "danger"));
     };

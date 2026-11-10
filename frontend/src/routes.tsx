@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Manager from './pages/Manager';
 import Dashboard from './pages/Dashboard';
 import Tree from './pages/Tree';
+import Recent from './pages/Recent';
 
 const AppRoutes = () => {
   return (
@@ -10,6 +11,7 @@ const AppRoutes = () => {
       <Route path='/dashboard' element={<Dashboard />} />
       <Route path='/manager' element={<Manager />} />
       <Route path='/tree' element={<Tree />} />
+      <Route path='/recent' element={<Recent />} />
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
   );

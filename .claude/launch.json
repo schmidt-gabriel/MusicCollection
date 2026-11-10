@@ -4,12 +4,24 @@
     {
       "name": "frontend-mock",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000,
       "cwd": "frontend",
       "env": {
         "REACT_APP_MOCK": "1"
       }
+    },
+    {
+      "name": "web-mock",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd frontend && REACT_APP_MOCK=1 node node_modules/vite/bin/vite.js"
+      ],
+      "port": 3000
     }
   ]
 }

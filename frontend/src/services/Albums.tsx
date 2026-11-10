@@ -94,6 +94,52 @@ async function FindAndSort(query: object): Promise<Record<string, number | strin
     return sortByArtist(data);
 }
 
+/** Creation date embedded in a Mongo ObjectId (first 4 bytes = seconds). */
+function DateAddedFromId(id: string): Date | undefined {
+    if (!/^[0-9a-f]{24}$/i.test(id)) return undefined;
+    return new Date(parseInt(id.substring(0, 8), 16) * 1000);
+}
+
+/** Maps a raw aggregation document (UPPERCASE BSON) to the camelCase API shape. */
+function rawToAlbum(doc: Record<string, any>): AlbumData {
+    const discs = Array.isArray(doc.DISCS) ? doc.DISCS : [];
+    return {
+        id: String(doc._id ?? ''),
+        releaseYear: doc.RELEASE_YEAR,
+        artist: doc.ARTIST ?? '',
+        title: doc.TITLE ?? '',
+        media: doc.MEDIA ?? '',
+        purchase: doc.PURCHASE ?? '',
+        origin: doc.ORIGIN ?? '',
+        editionYear: doc.EDITION_YEAR,
+        ifpiMastering: doc.IFPI_MASTERING ?? '',
+        ifpiMould: doc.IFPI_MOULD ?? '',
+        barcode: doc.BARCODE ?? '',
+        matriz: doc.MATRIZ ?? '',
+        lote: doc.LOTE ?? '',
+        obs: doc.OBS ?? '',
+        discogs: doc.DISCOGS ?? {},
+        spotify: doc.SPOTIFY ?? {},
+        discs: discs.map((d: Record<string, any>) => ({
+            discNumber: d.DISC_NUMBER ?? '',
+            weight: d.WEIGHT ?? '',
+            matriz: d.MATRIZ ?? [],
+        })),
+    } as AlbumData;
+}
+
+/**
+ * Latest `limit` albums, newest first. Albums have no date-added field, so
+ * this sorts by `_id` (ObjectIds embed their creation time). Uses
+ * /aggregation because /findAndSort caps results at 20.
+ */
+async function FetchRecentAlbums(limit = 50): Promise<AlbumData[]> {
+    const data = await apiFetch<Record<string, unknown>[] | null>('/aggregation', {
+        body: [{ $sort: { _id: -1 } }, { $limit: limit }],
+    });
+    return (Array.isArray(data) ? data : []).map(rawToAlbum);
+}
+
 async function ExportCollection(): Promise<AlbumData[]> {
     const data = await apiFetch<AlbumData[] | null>('/all');
     const albums = Array.isArray(data) ? data : [];
@@ -113,5 +159,7 @@ export {
     Find,
     GetDiscogs,
     FindAndSort,
-    ExportCollection
+    ExportCollection,
+    FetchRecentAlbums,
+    DateAddedFromId
 }

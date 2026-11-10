@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import styled from 'styled-components'
 import { Image, Spinner, Dropdown } from 'react-bootstrap'
-import { FaFileCsv, FaFileCode, FaAccusoft, FaTasks, FaTree, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
+import { FaFileCsv, FaFileCode, FaAccusoft, FaTasks, FaTree, FaClock, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
 import { ExportCollection } from '../services/Albums';
 import { forwardRef, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
@@ -197,6 +197,11 @@ const SidebarData = [
         title: 'Arvore',
         path: '/tree',
         icon: <FaTree />
+    },
+    {
+        title: 'Recém adicionados',
+        path: '/recent',
+        icon: <FaClock />
     }
 ]
 
